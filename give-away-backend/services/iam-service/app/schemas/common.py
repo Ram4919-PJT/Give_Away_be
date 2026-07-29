@@ -4,17 +4,24 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict
 
 
-class ORMModel(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
+class BaseSchema(BaseModel):
+    """Base schema for all API models."""
+
+    model_config = ConfigDict(
+        from_attributes=True,
+        populate_by_name=True,
+        extra="forbid",
+        str_strip_whitespace=True,
+    )
 
 
-class TimestampMixin(BaseModel):
-    created_at: datetime | None = None
+class TimestampSchema(BaseSchema):
+    """Reusable timestamp fields."""
+
+    created_at: datetime
 
 
-class UUIDSchema(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
+class UUIDSchema(BaseSchema):
+    """Reusable UUID field."""
 
-    @classmethod
-    def parse_uuid(cls, value: UUID | str) -> UUID:
-        return value if isinstance(value, UUID) else UUID(str(value))
+    id: UUID

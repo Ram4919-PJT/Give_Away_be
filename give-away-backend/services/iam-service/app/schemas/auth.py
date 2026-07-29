@@ -1,70 +1,63 @@
-from uuid import UUID
+from pydantic import EmailStr, Field, SecretStr
 
-from pydantic import EmailStr, Field, field_validator
-
-from app.models.enums import RoleName
-from app.schemas.common import ORMModel
-from app.schemas.validators import normalize_email, validate_password
+from app.schemas.common import BaseSchema
 
 
-class LoginRequest(ORMModel):
+class RegisterRequest(BaseSchema):
+    full_name: str = Field(
+        ...,
+        min_length=3,
+        max_length=255,
+    )
+
     email: EmailStr
-    password: str = Field(..., min_length=8, max_length=128)
 
-    @field_validator("email")
-    @classmethod
-    def validate_email(cls, value: EmailStr) -> str:
-        return normalize_email(value)
+    mobile: str = Field(
+        ...,
+        min_length=10,
+        max_length=15,
+        pattern=r"^\+?[1-9]\d{9,14}$",
+    )
+
+    password: SecretStr = Field(
+        ...,
+        min_length=8,
+        max_length=128,
+    )
 
 
-class RegisterRequest(ORMModel):
-    full_name: str = Field(..., min_length=2, max_length=255)
+class LoginRequest(BaseSchema):
     email: EmailStr
-    mobile: str
-    password: str = Field(..., min_length=8, max_length=128)
-    role_name: RoleName
 
-    @field_validator("email")
-    @classmethod
-    def validate_email(cls, value: EmailStr) -> str:
-        return normalize_email(value)
-
-    @field_validator("password")
-    @classmethod
-    def validate_password_strength(cls, value: str) -> str:
-        return validate_password(value)
+    password: SecretStr
 
 
-class TokenResponse(ORMModel):
-    access_token: str
-    refresh_token: str
-    token_type: str = "bearer"
+class LogoutRequest(BaseSchema):
+    refresh_token: str = Field(
+        ...,
+        min_length=10,
+    )
 
 
-class RefreshTokenRequest(ORMModel):
-    refresh_token: str = Field(..., min_length=20)
-
-
-class AccessTokenPayload(ORMModel):
-    sub: UUID
-    role: RoleName
+class PasswordResetRequest(BaseSchema):
     email: EmailStr
 
 
-class PasswordResetRequest(ORMModel):
-    email: EmailStr
+class PasswordResetConfirm(BaseSchema):
+    token: str
 
-    @field_validator("email")
-    @classmethod
-    def validate_email(cls, value: EmailStr) -> str:
-        return normalize_email(value)
+    new_password: SecretStr = Field(
+        ...,
+        min_length=8,
+        max_length=128,
+    )
 
 
-class PasswordResetConfirm(ORMModel):
-    otp_code: str
-    new_password: str = Field(..., min_length=8, max_length=128)
+class ChangePasswordRequest(BaseSchema):
+    current_password: SecretStr
 
-    @field_validator("new_password")
-    @classmethod
-    def validate_new_password(cls, value: str) -> str:
-        return validate_password(value)
+    new_password: SecretStr = Field(
+        ...,
+        min_length=8,
+        max_length=128,
+    )
