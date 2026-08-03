@@ -20,13 +20,22 @@ def upgrade() -> None:
     op.execute("CREATE EXTENSION IF NOT EXISTS pgcrypto")
 
     role_name_enum = sa.Enum(
-        "DONOR", "RECEIVER", "NGO", "SUPER_ADMIN", name="role_name_enum"
+        "DONOR",
+        "RECEIVER",
+        "NGO",
+        "SUPER_ADMIN",
+        name="role_name_enum",
     )
     user_status_enum = sa.Enum(
-        "ACTIVE", "INACTIVE", "SUSPENDED", name="user_status_enum"
+        "ACTIVE",
+        "INACTIVE",
+        "SUSPENDED",
+        name="user_status_enum",
     )
     login_audit_status_enum = sa.Enum(
-        "SUCCESS", "FAILED", name="login_audit_status_enum"
+        "SUCCESS",
+        "FAILED",
+        name="login_audit_status_enum",
     )
     otp_purpose_enum = sa.Enum(
         "REGISTRATION",
@@ -36,15 +45,11 @@ def upgrade() -> None:
         name="otp_purpose_enum",
     )
     otp_verified_status_enum = sa.Enum(
-        "PENDING", "VERIFIED", "EXPIRED", name="otp_verified_status_enum"
+        "PENDING",
+        "VERIFIED",
+        "EXPIRED",
+        name="otp_verified_status_enum",
     )
-
-    bind = op.get_bind()
-    role_name_enum.create(bind, checkfirst=True)
-    user_status_enum.create(bind, checkfirst=True)
-    login_audit_status_enum.create(bind, checkfirst=True)
-    otp_purpose_enum.create(bind, checkfirst=True)
-    otp_verified_status_enum.create(bind, checkfirst=True)
 
     op.create_table(
         "roles",

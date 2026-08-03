@@ -2,61 +2,86 @@
 
 Authentication, authorization, user accounts, roles, OTP, and login audit for the Give Away Platform.
 
-## Local development
-
-### Prerequisites
+## Prerequisites
 
 - Python 3.11+
-- PostgreSQL with database `iam_db`
+- PostgreSQL 14+ with database `iam_db`
 
 ```sql
 CREATE DATABASE iam_db;
 ```
 
-### Setup
+## Setup
 
 ```bash
 cd services/iam-service
 cp .env.example .env
-pip install -e .
+# Edit .env — set DATABASE_URL, JWT_SECRET_KEY
+
+pip install -r requirements.txt
 alembic upgrade head
 python scripts/seed_roles.py
 uvicorn app.main:app --reload --port 8001
 ```
 
-Swagger UI: http://localhost:8001/docs
+| URL | Description |
+|-----|-------------|
+| http://localhost:8001/docs | Swagger UI |
+| http://localhost:8001/health | Health check |
 
-## Structure
+## Environment variables
 
-```
-app/
-├── main.py              # FastAPI entrypoint
-├── config.py            # Settings
-├── api/v1/              # HTTP routes
-├── core/                # Business logic
-├── core/security/       # JWT, password, refresh utilities
-├── models/              # SQLAlchemy ORM (5 tables)
-├── schemas/             # Pydantic DTOs
-├── repositories/        # Database access
-├── dependencies/        # FastAPI auth dependencies
-├── db/                  # Session & base
-├── events/              # Event publisher stub
-└── middleware/          # Exception handlers
-```
+| Variable | Description |
+|----------|-------------|
+| `DATABASE_URL` | PostgreSQL async connection string |
+| `JWT_SECRET_KEY` | Secret for signing access tokens (min 32 chars) |
+| `CORS_ORIGINS` | Comma-separated allowed frontend origins |
+| `OTP_LOG_TO_CONSOLE` | Print OTP codes to console in dev |
 
-## FRD modules
+See `.env.example` for the full list.
 
-| Module | Routes |
+## API modules
+
+| Module | Prefix |
 |--------|--------|
-| Authentication | `/api/v1/auth/*` |
-| OTP | `/api/v1/otp/*` |
-| User management | `/api/v1/users/*` |
-| Role management | `/api/v1/roles/*` |
-| Login audit | `/api/v1/audit/*` |
+| Authentication | `/api/v1/auth` |
+| OTP | `/api/v1/otp` |
+| Users | `/api/v1/users` |
+| Roles | `/api/v1/roles` |
+| Login audit | `/api/v1/audit` |
 
 ## Default roles
 
-- DONOR
-- RECEIVER
-- NGO
-- SUPER_ADMIN (seed only; create first admin manually in DB or extend seed script)
+Seeded by `python scripts/seed_roles.py`:
+
+- `DONOR` — contributes money or items
+- `RECEIVER` — receives financial assistance
+- `NGO` — partner organization
+- `SUPER_ADMIN` — platform administrator (create user manually or via register + DB update)
+
+## Project structure
+
+```
+app/
+├── main.py              # FastAPI app & middleware
+├── config.py            # Settings from .env
+├── api/v1/              # Route handlers
+├── core/                # Business logic
+├── core/security/       # JWT, passwords, refresh tokens
+├── models/              # SQLAlchemy ORM
+├── schemas/             # Pydantic request/response models
+├── repositories/        # Database access layer
+├── dependencies/        # Auth & RBAC dependencies
+├── db/                  # Engine & sessions
+├── events/              # Event publisher (stub)
+└── middleware/          # Exception handlers
+scripts/
+└── seed_roles.py        # Seed default roles
+```
+
+## Development
+
+```bash
+pip install -r requirements-dev.txt
+pytest
+```

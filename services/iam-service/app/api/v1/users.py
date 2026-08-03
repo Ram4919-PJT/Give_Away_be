@@ -3,6 +3,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.exceptions import AuthorizationError
 from app.core.user_service import UserService
 from app.db.session import get_db
 from app.dependencies.auth import get_current_user, require_roles
@@ -30,8 +31,6 @@ async def get_user(
     db: AsyncSession = Depends(get_db),
 ):
     if current_user.user_id != user_id and current_user.role.role_name != RoleName.SUPER_ADMIN:
-        from app.core.exceptions import AuthorizationError
-
         raise AuthorizationError("Cannot view this user")
     return await UserService(db).get_user(user_id)
 
@@ -45,8 +44,6 @@ async def update_user(
 ):
     is_admin = current_user.role.role_name == RoleName.SUPER_ADMIN
     if current_user.user_id != user_id and not is_admin:
-        from app.core.exceptions import AuthorizationError
-
         raise AuthorizationError("Cannot update this user")
 
     if not is_admin:

@@ -2,6 +2,7 @@ from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.exceptions import AuthenticationError
 from app.core.security.jwt import create_access_token
 from app.core.security.refresh import (
     generate_refresh_token,
@@ -44,7 +45,7 @@ class TokenService:
             hash_refresh_token(plain_refresh)
         )
         if not stored:
-            raise ValueError("Invalid or expired refresh token")
+            raise AuthenticationError("Invalid or expired refresh token")
 
         user = stored.user
         role_name = RoleName(stored.user.role.role_name)

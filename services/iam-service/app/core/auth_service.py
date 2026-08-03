@@ -7,7 +7,7 @@ from app.core.otp_service import OtpService
 from app.core.security.password import hash_password, verify_password
 from app.core.token_service import TokenService
 from app.events.publishers import EventPublisher
-from app.models.enums import LoginAuditStatus, RoleName, UserStatus
+from app.models.enums import LoginAuditStatus, OtpPurpose, RoleName, UserStatus
 from app.repositories.login_audit_repository import LoginAuditRepository
 from app.repositories.role_repository import RoleRepository
 from app.repositories.user_repository import UserRepository
@@ -19,6 +19,7 @@ from app.schemas.auth import (
     RegisterRequest,
     TokenResponse,
 )
+from app.schemas.otp import OtpSendRequest, OtpVerifyRequest
 
 
 class AuthService:
@@ -112,9 +113,6 @@ class AuthService:
         if not user:
             return
 
-        from app.models.enums import OtpPurpose
-        from app.schemas.otp import OtpSendRequest
-
         await self.otp_service.send_otp(
             OtpSendRequest(email=str(data.email), purpose=OtpPurpose.PASSWORD_RESET)
         )
@@ -124,9 +122,6 @@ class AuthService:
         )
 
     async def reset_password(self, data: PasswordResetConfirm) -> None:
-        from app.models.enums import OtpPurpose
-        from app.schemas.otp import OtpVerifyRequest
-
         user = await self.user_repo.get_by_email(str(data.email))
         if not user:
             raise AuthenticationError("Invalid reset request")

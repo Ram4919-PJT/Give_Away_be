@@ -16,7 +16,7 @@ health_router = APIRouter(tags=["Health"])
 
 
 @health_router.get("/health")
-async def health(db: AsyncSession = Depends(get_db)):
+async def health(db: AsyncSession = Depends(get_db)) -> dict[str, str]:
     await db.execute(text("SELECT 1"))
     return {"status": "ok", "service": settings.APP_NAME, "env": settings.ENV}
 
@@ -37,8 +37,8 @@ def create_app() -> FastAPI:
 
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"],
-        allow_credentials=True,
+        allow_origins=settings.cors_origins,
+        allow_credentials=settings.cors_allow_credentials,
         allow_methods=["*"],
         allow_headers=["*"],
     )
