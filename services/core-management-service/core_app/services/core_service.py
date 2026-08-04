@@ -5,11 +5,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from core_app.core.exceptions import ConflictError, NotFoundError
 from core_app.dependencies.auth import TokenUser
+from core_app.models.applications import AssistanceRequest
 from core_app.models.donations import Donation, DonationStatusHistory, MoneyDonationDetail
-from core_app.models.enums import DonationStatus, DonationType, ProfileStatus
+from core_app.models.enums import AssistanceRequestStatus, DonationStatus, DonationType, ProfileStatus
 from core_app.models.profiles import DonorProfile, NgoProfile, Program, ReceiverProfile
 from core_app.models.verification import VerificationRequest
 from core_app.schemas.donations import DonationCreate, VerificationRequestCreate
+from core_app.schemas.applications import AssistanceRequestCreate
 from core_app.schemas.profiles import (
     DonorProfileCreate,
     NgoProfileCreate,
@@ -172,3 +174,90 @@ async def create_verification_request(
     await db.commit()
     await db.refresh(request)
     return request
+
+
+async def list_assistance_requests(
+    db: AsyncSession, user: TokenUser
+) -> list[AssistanceRequest]:
+    query = select(AssistanceRequest).order_by(AssistanceRequest.created_at.desc())
+    if user.role != "SUPER_ADMIN":
+        query = query.where(AssistanceRequest.receiver_user_id == user.user_id)
+    result = await db.execute(query)
+    return list(result.scalars().all())
+
+
+async def get_assistance_request(
+    db: AsyncSession, user: TokenUser, request_id: UUID
+) -> AssistanceRequest | None:
+    query = select(AssistanceRequest).where(
+        AssistanceRequest.assistance_request_id == request_id
+    )
+    if user.role != "SUPER_ADMIN":
+        query = query.where(AssistanceRequest.receiver_user_id == user.user_id)
+    result = await db.execute(query)
+    return result.scalar_one_or_none()
+
+
+async def create_assistance_request(
+    db: AsyncSession, user: TokenUser, payload: AssistanceRequestCreate
+) -> AssistanceRequest:
+    request = AssistanceRequest(
+        receiver_user_id=user.user_id,
+        title=payload.title.strip(),
+        description=payload.description,
+        status=AssistanceRequestStatus.OPEN,
+    )
+    db.add(request)
+    await db.commit()
+    await db.refresh(request)
+    return request
+
+
+async def create_profile_from_registration(
+    db: AsyncSession,
+    *,
+    user_id: UUID,
+    role: str,
+    full_name: str,
+    _email: str,
+) -> None:
+    """Create a role-specific profile stub when IAM publishes user.registered."""
+    if role == "DONOR":
+        result = await db.execute(select(DonorProfile).where(DonorProfile.user_id == user_id))
+        if result.scalar_one_or_none():
+            return
+        db.add(
+            DonorProfile(
+                user_id=user_id,
+                organization_name=full_name,
+                status=ProfileStatus.ACTIVE,
+            )
+        )
+    elif role == "RECEIVER":
+        result = await db.execute(
+            select(ReceiverProfile).where(ReceiverProfile.user_id == user_id)
+        )
+        if result.scalar_one_or_none():
+            return
+        db.add(
+            ReceiverProfile(
+                user_id=user_id,
+                status=ProfileStatus.ACTIVE,
+            )
+        )
+    elif role == "NGO":
+        result = await db.execute(select(NgoProfile).where(NgoProfile.user_id == user_id))
+        if result.scalar_one_or_none():
+            return
+        db.add(
+            NgoProfile(
+                user_id=user_id,
+                organization_name=full_name,
+                registration_number=f"PENDING-{str(user_id)[:8].upper()}",
+                status=ProfileStatus.DRAFT,
+            )
+        )
+    else:
+        return
+
+    await db.commit()

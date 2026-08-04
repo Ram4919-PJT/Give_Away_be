@@ -6,7 +6,9 @@ from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
-from app.core.exceptions import ConflictError, NotFoundError
+from app.core.exceptions import ConflictError, NotFoundError, RateLimitError
+from shared.redis.keys import OTP_RATE
+from shared.redis.rate_limit import is_rate_limited
 from app.events.publishers import EventPublisher
 from app.models.enums import OtpPurpose, OtpVerificationStatus
 from app.models.otp_verification import OtpVerification
@@ -22,9 +24,20 @@ class OtpService:
         self.user_repo = UserRepository(db)
 
     async def send_otp(self, data: OtpSendRequest) -> None:
+        from gateway.config import settings
+
         user = await self._resolve_user(data.email, data.mobile)
         if not user:
             raise NotFoundError("User not found")
+
+        identifier = (data.email or data.mobile or str(user.user_id)).lower()
+        rate_key = OTP_RATE.format(identifier=identifier)
+        if await is_rate_limited(
+            rate_key,
+            max_attempts=settings.REDIS_OTP_RATE_LIMIT,
+            window_seconds=settings.REDIS_OTP_RATE_WINDOW,
+        ):
+            raise RateLimitError("Too many OTP requests. Please try again later.")
 
         pending_count = await self.otp_repo.count_pending(user.user_id)
         if pending_count >= settings.OTP_MAX_PENDING:
