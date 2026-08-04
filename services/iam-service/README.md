@@ -21,13 +21,25 @@ cp .env.example .env
 pip install -r requirements.txt
 alembic upgrade head
 python scripts/seed_roles.py
+```
+
+Run via the **API gateway** (recommended):
+
+```bash
+cd ../..
+python run.py
+```
+
+Or run IAM standalone for development:
+
+```bash
 uvicorn app.main:app --reload --port 8001
 ```
 
-| URL | Description |
+| URL (via gateway :8000) | Description |
 |-----|-------------|
-| http://localhost:8001/docs | Swagger UI |
-| http://localhost:8001/health | Health check |
+| http://localhost:8000/docs | Swagger UI |
+| http://localhost:8000/health | Health check |
 
 ## Environment variables
 

@@ -27,7 +27,15 @@ async def lifespan(_app: FastAPI):
     await engine.dispose()
 
 
-def create_app() -> FastAPI:
+def register_iam(app: FastAPI) -> None:
+    """Register IAM routes and exception handlers on a FastAPI app."""
+    app.add_exception_handler(AppError, app_error_handler)
+    app.add_exception_handler(ValueError, value_error_handler)
+    app.include_router(health_router)
+    app.include_router(api_router, prefix="/api/v1")
+
+
+def create_app(*, enable_cors: bool = True) -> FastAPI:
     app = FastAPI(
         title=settings.APP_NAME,
         version="1.0.0",
@@ -35,20 +43,16 @@ def create_app() -> FastAPI:
         lifespan=lifespan,
     )
 
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=settings.cors_origins,
-        allow_credentials=settings.cors_allow_credentials,
-        allow_methods=["*"],
-        allow_headers=["*"],
-    )
+    if enable_cors:
+        app.add_middleware(
+            CORSMiddleware,
+            allow_origins=settings.cors_origins,
+            allow_credentials=settings.cors_allow_credentials,
+            allow_methods=["*"],
+            allow_headers=["*"],
+        )
 
-    app.add_exception_handler(AppError, app_error_handler)
-    app.add_exception_handler(ValueError, value_error_handler)
-
-    app.include_router(health_router)
-    app.include_router(api_router, prefix="/api/v1")
-
+    register_iam(app)
     return app
 
 
