@@ -37,6 +37,7 @@ async def mark_notification_read(
     notification.read_at = datetime.now(UTC)
     await db.commit()
     await db.refresh(notification)
+    await _decrement_unread_count(user.user_id)
     return notification
 
 
@@ -88,3 +89,55 @@ async def upsert_preference(
     await db.commit()
     await db.refresh(preference)
     return preference
+
+
+async def create_system_notification(
+    db: AsyncSession,
+    *,
+    user_id: UUID,
+    title: str,
+    body: str,
+) -> Notification:
+    notification = Notification(
+        user_id=user_id,
+        title=title,
+        body=body,
+        status=NotificationStatus.SENT,
+    )
+    db.add(notification)
+    await db.commit()
+    await db.refresh(notification)
+
+    await _increment_unread_count(user_id)
+    return notification
+
+
+async def _increment_unread_count(user_id: UUID) -> None:
+    from shared.redis.client import get_redis, is_redis_enabled
+    from shared.redis.keys import UNREAD_COUNT
+
+    if not is_redis_enabled():
+        return
+
+    redis = get_redis()
+    if redis is None:
+        return
+
+    await redis.incr(UNREAD_COUNT.format(user_id=str(user_id)))
+
+
+async def _decrement_unread_count(user_id: UUID) -> None:
+    from shared.redis.client import get_redis, is_redis_enabled
+    from shared.redis.keys import UNREAD_COUNT
+
+    if not is_redis_enabled():
+        return
+
+    redis = get_redis()
+    if redis is None:
+        return
+
+    key = UNREAD_COUNT.format(user_id=str(user_id))
+    value = await redis.decr(key)
+    if value < 0:
+        await redis.set(key, 0)
