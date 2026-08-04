@@ -1,0 +1,13 @@
+# Environment — secrets live in services/iam-service/.env
+.env
+.env.local
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# IDE
+.idea/
+.vscode/
