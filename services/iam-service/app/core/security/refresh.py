@@ -14,4 +14,7 @@ def hash_refresh_token(token: str) -> str:
 
 
 def refresh_token_expires_at() -> datetime:
-    return datetime.now(UTC) + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
+    # Models use TIMESTAMP WITHOUT TIME ZONE; store naive UTC.
+    return datetime.now(UTC).replace(tzinfo=None) + timedelta(
+        days=settings.REFRESH_TOKEN_EXPIRE_DAYS
+    )

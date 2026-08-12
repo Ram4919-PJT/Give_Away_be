@@ -3,10 +3,12 @@ from typing import TYPE_CHECKING
 
 from sqlalchemy import (
     BigInteger,
+    Boolean,
     DateTime,
     ForeignKey,
     String,
     func,
+    text,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -32,14 +34,27 @@ class RefreshToken(Base):
         index=True,
     )
 
-    token: Mapped[str] = mapped_column(
-        String(500),
+    token_hash: Mapped[str] = mapped_column(
+        String(64),
         nullable=False,
+        unique=True,
     )
 
     expires_at: Mapped[datetime] = mapped_column(
         DateTime,
         nullable=False,
+    )
+
+    is_revoked: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        server_default=text("false"),
+        default=False,
+    )
+
+    revoked_at: Mapped[datetime | None] = mapped_column(
+        DateTime,
+        nullable=True,
     )
 
     created_at: Mapped[datetime] = mapped_column(

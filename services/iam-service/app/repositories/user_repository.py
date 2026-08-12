@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from uuid import UUID
-
 from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -10,7 +8,6 @@ from app.core.security.password import hash_password
 from app.models.enums import UserStatus
 from app.models.user import User
 from app.schemas.auth import RegisterRequest
-from app.schemas.validators import normalize_email, normalize_full_name, normalize_mobile
 
 
 class UserRepository:
@@ -23,7 +20,7 @@ class UserRepository:
         await self.session.refresh(user)
         return user
 
-    async def create_from_register(self, data: RegisterRequest, role_id: UUID) -> User:
+    async def create_from_register(self, data: RegisterRequest, role_id: int) -> User:
         user = User(
             role_id=role_id,
             full_name=data.full_name,
@@ -35,7 +32,7 @@ class UserRepository:
         return await self.create(user)
 
 
-    async def get_by_id(self, user_id: UUID) -> User | None:
+    async def get_by_id(self, user_id: int) -> User | None:
         stmt = (
             select(User)
             .options(
@@ -116,7 +113,7 @@ class UserRepository:
         result = await self.session.execute(stmt)
         return list(result.scalars().all())
 
-    async def get_by_role(self, role_id: UUID) -> list[User]:
+    async def get_by_role(self, role_id: int) -> list[User]:
         stmt = (
             select(User)
             .options(selectinload(User.role))
@@ -196,7 +193,7 @@ class UserRepository:
     async def update_role(
         self,
         user: User,
-        role_id: UUID,
+        role_id: int,
     ) -> User:
         user.role_id = role_id
 

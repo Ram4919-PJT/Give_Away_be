@@ -11,7 +11,7 @@ class VerificationRequest(Base):
     __tablename__ = "verification_requests"
 
     request_id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
-    user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.user_id"), nullable=False)
+    user_id: Mapped[int] = mapped_column(BigInteger, nullable=False)
     request_type: Mapped[str] = mapped_column(String(50), nullable=False)
     status: Mapped[str] = mapped_column(String(50), nullable=False, default="SUBMITTED")
     submitted_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())

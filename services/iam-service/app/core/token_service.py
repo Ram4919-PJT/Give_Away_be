@@ -1,5 +1,3 @@
-from uuid import UUID
-
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import AuthenticationError
@@ -22,14 +20,14 @@ class TokenService:
 
     async def create_token_pair(self, user: User, role_name: RoleName) -> TokenResponse:
         access_token = create_access_token(
-            user_id=user.user_id,
+            user_id=int(user.user_id),
             email=user.email,
             role=role_name,
         )
 
         plain_refresh = generate_refresh_token()
         await self.refresh_repo.create(
-            user_id=user.user_id,
+            user_id=int(user.user_id),
             token_hash=hash_refresh_token(plain_refresh),
             expires_at=refresh_token_expires_at(),
         )
@@ -48,7 +46,11 @@ class TokenService:
             raise AuthenticationError("Invalid or expired refresh token")
 
         user = stored.user
-        role_name = RoleName(stored.user.role.role_name)
+        role_name = RoleName(
+            user.role.role_name.value
+            if hasattr(user.role.role_name, "value")
+            else user.role.role_name
+        )
 
         await self.refresh_repo.revoke_by_id(stored.token_id)
         await self.db.commit()
@@ -59,6 +61,6 @@ class TokenService:
         await self.refresh_repo.revoke_by_hash(hash_refresh_token(plain_refresh))
         await self.db.commit()
 
-    async def revoke_all_for_user(self, user_id: UUID) -> None:
+    async def revoke_all_for_user(self, user_id: int) -> None:
         await self.refresh_repo.revoke_all_for_user(user_id)
         await self.db.commit()

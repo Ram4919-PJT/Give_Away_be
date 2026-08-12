@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from uuid import UUID
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
@@ -11,7 +10,7 @@ bearer_scheme = HTTPBearer(auto_error=True)
 
 @dataclass(frozen=True)
 class TokenUser:
-    user_id: UUID
+    user_id: int
     email: str
     role: str
 
@@ -22,11 +21,11 @@ async def get_current_user(
     try:
         payload = decode_access_token(credentials.credentials)
         return TokenUser(
-            user_id=UUID(payload["sub"]),
+            user_id=int(payload["sub"]),
             email=payload.get("email", ""),
             role=payload.get("role", ""),
         )
-    except (TokenDecodeError, ValueError, KeyError) as exc:
+    except (TokenDecodeError, ValueError, TypeError, KeyError) as exc:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid or expired access token",

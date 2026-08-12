@@ -37,6 +37,11 @@ class LoginAudit(Base):
         nullable=True,
     )
 
+    user_agent: Mapped[str | None] = mapped_column(
+        String(500),
+        nullable=True,
+    )
+
     status: Mapped[str] = mapped_column(
         String(50),
         nullable=False,

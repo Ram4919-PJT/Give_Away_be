@@ -26,7 +26,7 @@ class DonorProfile(Base):
     __tablename__ = "donor_profiles"
 
     donor_id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
-    user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.user_id"), unique=True, nullable=False)
+    user_id: Mapped[int] = mapped_column(BigInteger, unique=True, nullable=False)
     full_name: Mapped[str] = mapped_column(String(100), nullable=False)
     mobile: Mapped[str] = mapped_column(String(20), nullable=False)
     email: Mapped[str] = mapped_column(String(100), nullable=False)
@@ -37,7 +37,7 @@ class ReceiverProfile(Base):
     __tablename__ = "receiver_profiles"
 
     receiver_id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
-    user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.user_id"), unique=True, nullable=False)
+    user_id: Mapped[int] = mapped_column(BigInteger, unique=True, nullable=False)
     full_name: Mapped[str] = mapped_column(String(100), nullable=False)
     mobile: Mapped[str] = mapped_column(String(20), nullable=False)
     email: Mapped[str] = mapped_column(String(100), nullable=False)
@@ -49,7 +49,7 @@ class NgoProfile(Base):
     __tablename__ = "ngo_profiles"
 
     ngo_id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
-    user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.user_id"), unique=True, nullable=False)
+    user_id: Mapped[int] = mapped_column(BigInteger, unique=True, nullable=False)
     ngo_name: Mapped[str] = mapped_column(String(150), nullable=False)
     registration_number: Mapped[str] = mapped_column(String(100), unique=True, nullable=False)
     contact_person: Mapped[str] = mapped_column(String(100), nullable=False)

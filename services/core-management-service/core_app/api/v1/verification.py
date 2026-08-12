@@ -15,6 +15,12 @@ class ReviewActionRequest(BaseModel):
     reason: str | None = None
 
 
+class VerificationCreateRequest(BaseModel):
+    request_type: str  # DONOR | RECEIVER | NGO
+    notes: str | None = None
+    user_id: int | None = None
+
+
 @router.get("/requests")
 async def list_verification_requests(db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(VerificationRequest))
@@ -38,6 +44,39 @@ async def list_verification_requests(db: AsyncSession = Depends(get_db)):
             "rejection_reasons": [{"reason_id": r.reason_id, "reason": r.reason, "created_at": r.created_at} for r in reasons],
         })
     return response
+
+
+@router.post("/requests", status_code=status.HTTP_201_CREATED)
+async def create_verification_request(
+    data: VerificationCreateRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    if data.user_id is None:
+        raise HTTPException(status_code=400, detail="user_id is required")
+
+    req = VerificationRequest(
+        user_id=data.user_id,
+        request_type=data.request_type.upper(),
+        status="SUBMITTED",
+    )
+    db.add(req)
+    await db.commit()
+    await db.refresh(req)
+
+    history = VerificationStatusHistory(request_id=req.request_id, status="SUBMITTED")
+    db.add(history)
+    await db.commit()
+
+    return {
+        "request_id": req.request_id,
+        "user_id": req.user_id,
+        "request_type": req.request_type,
+        "status": req.status,
+        "submitted_at": req.submitted_at,
+        "notes": data.notes,
+        "documents": [],
+        "rejection_reasons": [],
+    }
 
 
 @router.get("/requests/{request_id}")

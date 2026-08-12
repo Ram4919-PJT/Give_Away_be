@@ -1,5 +1,3 @@
-from uuid import UUID
-
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import AuthenticationError, ConflictError
@@ -33,6 +31,14 @@ class AuthService:
         self.token_service = TokenService(db)
         self.otp_service = OtpService(db)
 
+    @staticmethod
+    def _role_name(value: RoleName | str | None) -> RoleName:
+        if value is None:
+            return RoleName.DONOR
+        if isinstance(value, RoleName):
+            return value
+        return RoleName(str(value))
+
     async def register(self, data: RegisterRequest) -> TokenResponse:
         if data.role_name not in self.PUBLIC_ROLES:
             raise ConflictError("Invalid role for self-registration")
@@ -47,13 +53,17 @@ class AuthService:
         if await self.user_repo.get_by_mobile(data.mobile):
             raise ConflictError("Mobile already registered")
 
-        user = await self.user_repo.create_from_register(data, role.role_id)
+        user = await self.user_repo.create_from_register(data, int(role.role_id))
         await self.db.commit()
         await self.db.refresh(user)
 
         await EventPublisher.publish(
             "user.registered",
-            {"user_id": str(user.user_id), "email": user.email, "role": data.role_name.value},
+            {
+                "user_id": str(user.user_id),
+                "email": user.email,
+                "role": data.role_name.value,
+            },
         )
 
         return await self.token_service.create_token_pair(user, data.role_name)
@@ -78,7 +88,10 @@ class AuthService:
             await self.db.commit()
             raise AuthenticationError("Invalid email or password")
 
-        if user.status != UserStatus.ACTIVE:
+        status_value = (
+            user.status.value if hasattr(user.status, "value") else str(user.status)
+        )
+        if status_value != UserStatus.ACTIVE.value:
             await self.audit_repo.create(
                 user_id=user.user_id,
                 ip_address=ip_address,
@@ -96,7 +109,7 @@ class AuthService:
         )
         await self.db.commit()
 
-        role_name = user.role.role_name if user.role else "DONOR"
+        role_name = self._role_name(user.role.role_name if user.role else None)
         return await self.token_service.create_token_pair(user, role_name)
 
     async def refresh(self, refresh_token: str) -> TokenResponse:
@@ -105,7 +118,7 @@ class AuthService:
     async def logout(self, refresh_token: str) -> None:
         await self.token_service.revoke_refresh_token(refresh_token)
 
-    async def logout_all(self, user_id: UUID) -> None:
+    async def logout_all(self, user_id: int) -> None:
         await self.token_service.revoke_all_for_user(user_id)
 
     async def forgot_password(self, data: PasswordResetRequest) -> None:
@@ -138,10 +151,10 @@ class AuthService:
             user,
             hash_password(data.new_password.get_secret_value()),
         )
-        await self.token_service.revoke_all_for_user(user.user_id)
+        await self.token_service.revoke_all_for_user(int(user.user_id))
         await self.db.commit()
 
-    async def change_password(self, user_id: UUID, data: ChangePasswordRequest) -> None:
+    async def change_password(self, user_id: int, data: ChangePasswordRequest) -> None:
         user = await self.user_repo.get_by_id(user_id)
         if not user:
             raise AuthenticationError("User not found")
