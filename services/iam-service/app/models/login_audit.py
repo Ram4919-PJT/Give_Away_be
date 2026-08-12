@@ -1,12 +1,10 @@
-import uuid
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import DateTime, Enum, ForeignKey, Index, String, Uuid, func, text
+from sqlalchemy import BigInteger, DateTime, ForeignKey, String, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
-from app.models.enums import LoginAuditStatus
 
 if TYPE_CHECKING:
     from app.models.user import User
@@ -15,26 +13,21 @@ if TYPE_CHECKING:
 class LoginAudit(Base):
     __tablename__ = "login_audit"
 
-    __table_args__ = (
-        Index("ix_login_audit_user_login_time", "user_id", "login_time"),
-    )
-
-    audit_id: Mapped[uuid.UUID] = mapped_column(
-        Uuid(as_uuid=True),
+    audit_id: Mapped[int] = mapped_column(
+        BigInteger,
         primary_key=True,
-        server_default=text("gen_random_uuid()"),
-        default=uuid.uuid4,
+        autoincrement=True,
     )
 
-    user_id: Mapped[uuid.UUID | None] = mapped_column(
-        Uuid(as_uuid=True),
-        ForeignKey("users.user_id", ondelete="SET NULL"),
+    user_id: Mapped[int | None] = mapped_column(
+        BigInteger,
+        ForeignKey("users.user_id", ondelete="CASCADE"),
         nullable=True,
         index=True,
     )
 
     login_time: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
+        DateTime,
         nullable=False,
         server_default=func.now(),
     )
@@ -44,15 +37,9 @@ class LoginAudit(Base):
         nullable=True,
     )
 
-    user_agent: Mapped[str | None] = mapped_column(
-        String(500),
-        nullable=True,
-    )
-
-    status: Mapped[LoginAuditStatus] = mapped_column(
-        Enum(LoginAuditStatus, name="login_audit_status_enum"),
+    status: Mapped[str] = mapped_column(
+        String(50),
         nullable=False,
-        default=LoginAuditStatus.FAILED,
     )
 
     user: Mapped["User | None"] = relationship(
@@ -65,5 +52,5 @@ class LoginAudit(Base):
             f"<LoginAudit("
             f"audit_id={self.audit_id}, "
             f"user_id={self.user_id}, "
-            f"status={self.status.value})>"
+            f"status='{self.status}')>"
         )

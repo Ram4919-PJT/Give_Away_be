@@ -96,7 +96,7 @@ class AuthService:
         )
         await self.db.commit()
 
-        role_name = RoleName(user.role.role_name)
+        role_name = user.role.role_name if user.role else "DONOR"
         return await self.token_service.create_token_pair(user, role_name)
 
     async def refresh(self, refresh_token: str) -> TokenResponse:

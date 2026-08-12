@@ -1,75 +1,80 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from core_app.db.session import get_db
-from core_app.dependencies.auth import TokenUser, get_current_user, require_roles
-from core_app.schemas.profiles import (
-    DonorProfileCreate,
-    DonorProfileResponse,
-    NgoProfileCreate,
-    NgoProfileResponse,
-    ProgramCreate,
-    ProgramResponse,
-    ReceiverProfileCreate,
-    ReceiverProfileResponse,
-)
-from core_app.services import core_service
+from core_app.models.profiles import Address, Beneficiary, DonorProfile, NgoProfile, Program, ReceiverProfile
 
-router = APIRouter(prefix="/profiles", tags=["Core - Profiles"])
+router = APIRouter(tags=["Profiles"])
 
 
-@router.get("/me/donor", response_model=DonorProfileResponse | None)
-async def get_my_donor_profile(
-    user: TokenUser = Depends(require_roles("DONOR")),
-    db: AsyncSession = Depends(get_db),
-):
-    from sqlalchemy import select
-
-    from core_app.models.profiles import DonorProfile
-
-    result = await db.execute(select(DonorProfile).where(DonorProfile.user_id == user.user_id))
-    return result.scalar_one_or_none()
+# --- Addresses ---
+@router.get("/addresses")
+async def list_addresses(db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(Address))
+    return result.scalars().all()
 
 
-@router.post("/donor", response_model=DonorProfileResponse, status_code=201)
-async def create_donor_profile(
-    payload: DonorProfileCreate,
-    user: TokenUser = Depends(require_roles("DONOR")),
-    db: AsyncSession = Depends(get_db),
-):
-    return await core_service.get_or_create_donor_profile(db, user, payload)
+# --- Donor Profiles ---
+@router.get("/profiles/donors")
+async def list_donor_profiles(db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(DonorProfile))
+    return result.scalars().all()
 
 
-@router.post("/receiver", response_model=ReceiverProfileResponse, status_code=201)
-async def create_receiver_profile(
-    payload: ReceiverProfileCreate,
-    user: TokenUser = Depends(require_roles("RECEIVER")),
-    db: AsyncSession = Depends(get_db),
-):
-    return await core_service.get_or_create_receiver_profile(db, user, payload)
+@router.get("/profiles/donors/{donor_id}")
+async def get_donor_profile(donor_id: int, db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(DonorProfile).where(DonorProfile.donor_id == donor_id))
+    donor = result.scalar_one_or_none()
+    if not donor:
+        raise HTTPException(status_code=404, detail="Donor profile not found")
+    return donor
 
 
-@router.post("/ngo", response_model=NgoProfileResponse, status_code=201)
-async def create_ngo_profile(
-    payload: NgoProfileCreate,
-    user: TokenUser = Depends(require_roles("NGO")),
-    db: AsyncSession = Depends(get_db),
-):
-    return await core_service.get_or_create_ngo_profile(db, user, payload)
+# --- Receiver Profiles ---
+@router.get("/profiles/receivers")
+async def list_receiver_profiles(db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(ReceiverProfile))
+    return result.scalars().all()
 
 
-@router.get("/programs", response_model=list[ProgramResponse])
-async def list_programs(
-    _user: TokenUser = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
-):
-    return await core_service.list_programs(db)
+@router.get("/profiles/receivers/{receiver_id}")
+async def get_receiver_profile(receiver_id: int, db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(ReceiverProfile).where(ReceiverProfile.receiver_id == receiver_id))
+    rec = result.scalar_one_or_none()
+    if not rec:
+        raise HTTPException(status_code=404, detail="Receiver profile not found")
+    return rec
 
 
-@router.post("/programs", response_model=ProgramResponse, status_code=201)
-async def create_program(
-    payload: ProgramCreate,
-    user: TokenUser = Depends(require_roles("NGO")),
-    db: AsyncSession = Depends(get_db),
-):
-    return await core_service.create_program(db, user, payload)
+# --- NGO Profiles ---
+@router.get("/profiles/ngos")
+async def list_ngo_profiles(db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(NgoProfile))
+    return result.scalars().all()
+
+
+@router.get("/profiles/ngos/{ngo_id}")
+async def get_ngo_profile(ngo_id: int, db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(NgoProfile).where(NgoProfile.ngo_id == ngo_id))
+    ngo = result.scalar_one_or_none()
+    if not ngo:
+        raise HTTPException(status_code=404, detail="NGO profile not found")
+    return ngo
+
+
+# --- Beneficiaries ---
+@router.get("/beneficiaries")
+async def list_beneficiaries(ngo_id: int | None = Query(None), db: AsyncSession = Depends(get_db)):
+    stmt = select(Beneficiary)
+    if ngo_id:
+        stmt = stmt.where(Beneficiary.ngo_id == ngo_id)
+    result = await db.execute(stmt)
+    return result.scalars().all()
+
+
+# --- Programs ---
+@router.get("/programs")
+async def list_programs(db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(Program))
+    return result.scalars().all()

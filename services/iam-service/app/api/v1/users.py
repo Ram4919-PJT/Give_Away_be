@@ -1,13 +1,9 @@
-from uuid import UUID
-
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 
-from app.core.exceptions import AuthorizationError
-from app.core.user_service import UserService
+from app.core.exceptions import NotFoundError
 from app.db.session import get_db
-from app.dependencies.auth import get_current_user, require_roles
-from app.models.enums import RoleName
 from app.models.user import User
 from app.schemas.user import RoleAssignRequest, UserStatusUpdate, UserUpdate, UserWithRoleResponse
 
@@ -17,66 +13,98 @@ router = APIRouter(prefix="/users", tags=["Users"])
 @router.get("", response_model=list[UserWithRoleResponse])
 async def list_users(
     skip: int = Query(0, ge=0),
-    limit: int = Query(20, ge=1, le=100),
-    _admin: User = Depends(require_roles(RoleName.SUPER_ADMIN)),
+    limit: int = Query(50, ge=1, le=200),
     db: AsyncSession = Depends(get_db),
 ):
-    return await UserService(db).list_users(skip=skip, limit=limit)
+    result = await db.execute(select(User).offset(skip).limit(limit))
+    users = result.scalars().all()
+    return users
 
 
 @router.get("/{user_id}", response_model=UserWithRoleResponse)
 async def get_user(
-    user_id: UUID,
-    current_user: User = Depends(get_current_user),
+    user_id: int,
     db: AsyncSession = Depends(get_db),
 ):
-    if current_user.user_id != user_id and current_user.role.role_name != RoleName.SUPER_ADMIN:
-        raise AuthorizationError("Cannot view this user")
-    return await UserService(db).get_user(user_id)
+    result = await db.execute(select(User).where(User.user_id == user_id))
+    user = result.scalar_one_or_none()
+    if not user:
+        raise NotFoundError(f"User #{user_id} not found")
+    return user
 
 
 @router.patch("/{user_id}", response_model=UserWithRoleResponse)
 async def update_user(
-    user_id: UUID,
+    user_id: int,
     data: UserUpdate,
-    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    is_admin = current_user.role.role_name == RoleName.SUPER_ADMIN
-    if current_user.user_id != user_id and not is_admin:
-        raise AuthorizationError("Cannot update this user")
+    result = await db.execute(select(User).where(User.user_id == user_id))
+    user = result.scalar_one_or_none()
+    if not user:
+        raise NotFoundError(f"User #{user_id} not found")
 
-    if not is_admin:
-        data.status = None
-        data.role_name = None
+    if data.full_name is not None:
+        user.full_name = data.full_name
+    if data.email is not None:
+        user.email = str(data.email)
+    if data.mobile is not None:
+        user.mobile = data.mobile
+    if data.status is not None:
+        user.status = data.status
 
-    return await UserService(db).update_user(user_id, data, is_admin=is_admin)
+    await db.commit()
+    await db.refresh(user)
+    return user
 
 
 @router.patch("/{user_id}/status", response_model=UserWithRoleResponse)
 async def update_user_status(
-    user_id: UUID,
+    user_id: int,
     data: UserStatusUpdate,
-    _admin: User = Depends(require_roles(RoleName.SUPER_ADMIN)),
     db: AsyncSession = Depends(get_db),
 ):
-    return await UserService(db).update_status(user_id, data.status)
+    result = await db.execute(select(User).where(User.user_id == user_id))
+    user = result.scalar_one_or_none()
+    if not user:
+        raise NotFoundError(f"User #{user_id} not found")
+
+    user.status = data.status
+    await db.commit()
+    await db.refresh(user)
+    return user
 
 
 @router.patch("/{user_id}/role", response_model=UserWithRoleResponse)
 async def assign_role(
-    user_id: UUID,
+    user_id: int,
     data: RoleAssignRequest,
-    _admin: User = Depends(require_roles(RoleName.SUPER_ADMIN)),
     db: AsyncSession = Depends(get_db),
 ):
-    return await UserService(db).assign_role(user_id, data.role_name)
+    result = await db.execute(select(User).where(User.user_id == user_id))
+    user = result.scalar_one_or_none()
+    if not user:
+        raise NotFoundError(f"User #{user_id} not found")
+
+    from app.models.role import Role
+    role_res = await db.execute(select(Role).where(Role.role_name == data.role_name))
+    role = role_res.scalar_one_or_none()
+    if not role:
+        raise NotFoundError(f"Role '{data.role_name}' not found")
+
+    user.role_id = role.role_id
+    await db.commit()
+    await db.refresh(user)
+    return user
 
 
 @router.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_user(
-    user_id: UUID,
-    _admin: User = Depends(require_roles(RoleName.SUPER_ADMIN)),
+    user_id: int,
     db: AsyncSession = Depends(get_db),
 ):
-    await UserService(db).delete_user(user_id)
+    result = await db.execute(select(User).where(User.user_id == user_id))
+    user = result.scalar_one_or_none()
+    if user:
+        await db.delete(user)
+        await db.commit()

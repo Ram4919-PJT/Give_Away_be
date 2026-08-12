@@ -1,12 +1,14 @@
 from comm_app.models.notification import (
-    DeliveryLog,
     Notification,
+    NotificationDeliveryLog,
+    NotificationDeliveryLog as DeliveryLog,
     NotificationTemplate,
     UserNotificationPreference,
 )
 
 __all__ = [
     "DeliveryLog",
+    "NotificationDeliveryLog",
     "Notification",
     "NotificationTemplate",
     "UserNotificationPreference",
