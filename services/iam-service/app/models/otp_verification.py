@@ -27,7 +27,7 @@ class OtpVerification(Base):
     )
 
     otp_code: Mapped[str] = mapped_column(
-        String(10),
+        String(128),
         nullable=False,
     )
 

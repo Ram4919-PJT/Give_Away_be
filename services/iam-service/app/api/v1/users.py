@@ -14,9 +14,13 @@ router = APIRouter(prefix="/users", tags=["Users"])
 async def list_users(
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=200),
+    status_filter: str | None = Query(None, alias="status"),
     db: AsyncSession = Depends(get_db),
 ):
-    result = await db.execute(select(User).offset(skip).limit(limit))
+    stmt = select(User).order_by(User.created_at.desc())
+    if status_filter:
+        stmt = stmt.where(User.status == status_filter.upper())
+    result = await db.execute(stmt.offset(skip).limit(limit))
     users = result.scalars().all()
     return users
 

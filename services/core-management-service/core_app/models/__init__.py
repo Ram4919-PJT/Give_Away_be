@@ -10,6 +10,8 @@ from core_app.models.donations import (
     MoneyDonation,
     PickupSchedule,
 )
+from core_app.models.pledges import DonorPledge
+from core_app.models.recurring_gifts import RecurringGift
 from core_app.models.funds import (
     Allocation,
     Disbursement,
@@ -43,7 +45,9 @@ __all__ = [
     "Beneficiary",
     "Disbursement",
     "DonationStatusHistory",
+    "DonorPledge",
     "DonorProfile",
+    "RecurringGift",
     "FundLedger",
     "FundPool",
     "InventoryItem",

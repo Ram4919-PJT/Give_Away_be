@@ -369,6 +369,40 @@ CREATE TABLE IF NOT EXISTS money_donations (
     donated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE IF NOT EXISTS donor_pledges (
+    pledge_id BIGSERIAL PRIMARY KEY,
+    donor_id BIGINT NOT NULL REFERENCES donor_profiles(donor_id),
+    program_id BIGINT NOT NULL REFERENCES programs(program_id),
+    organization_name VARCHAR(150) NOT NULL DEFAULT 'Aja Abayahastham',
+    monthly_amount DECIMAL(10, 2) NOT NULL,
+    duration_months INT NOT NULL,
+    start_date DATE NOT NULL,
+    payments_made INT NOT NULL DEFAULT 0,
+    status VARCHAR(50) NOT NULL DEFAULT 'ACTIVE',
+    payment_method VARCHAR(50),
+    next_payment_date DATE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS recurring_gifts (
+    gift_id BIGSERIAL PRIMARY KEY,
+    donor_id BIGINT NOT NULL REFERENCES donor_profiles(donor_id),
+    program_id BIGINT NOT NULL REFERENCES programs(program_id),
+    organization_name VARCHAR(150) NOT NULL DEFAULT 'Aja Abayahastham',
+    amount DECIMAL(10, 2) NOT NULL,
+    frequency VARCHAR(20) NOT NULL DEFAULT 'MONTHLY',
+    start_date DATE NOT NULL,
+    next_payment_date DATE,
+    payments_made INT NOT NULL DEFAULT 0,
+    status VARCHAR(50) NOT NULL DEFAULT 'ACTIVE',
+    payment_method VARCHAR(50),
+    paused_at TIMESTAMP,
+    cancelled_at TIMESTAMP,
+    completed_at TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 CREATE TABLE IF NOT EXISTS item_donations (
     item_donation_id BIGSERIAL PRIMARY KEY,
     donor_id BIGINT NOT NULL REFERENCES donor_profiles(donor_id),
@@ -774,6 +808,7 @@ SELECT setval('rejection_reasons_reason_id_seq', (SELECT MAX(reason_id) FROM rej
 SELECT setval('fund_pools_pool_id_seq', (SELECT MAX(pool_id) FROM fund_pools));
 SELECT setval('money_donations_donation_id_seq', (SELECT MAX(donation_id) FROM money_donations));
 SELECT setval('item_donations_item_donation_id_seq', (SELECT MAX(item_donation_id) FROM item_donations));
+SELECT setval('recurring_gifts_gift_id_seq', COALESCE((SELECT MAX(gift_id) FROM recurring_gifts), 1));
 SELECT setval('assistance_applications_application_id_seq', (SELECT MAX(application_id) FROM assistance_applications));
 SELECT setval('ngo_item_requests_request_id_seq', (SELECT MAX(request_id) FROM ngo_item_requests));
 SELECT setval('ngo_fund_requests_request_id_seq', (SELECT MAX(request_id) FROM ngo_fund_requests));

@@ -31,14 +31,18 @@ class OtpService:
             raise ConflictError("Too many pending OTP requests")
 
         otp_code = f"{secrets.randbelow(1_000_000):06d}"
-        expires_at = datetime.now(UTC) + timedelta(minutes=settings.OTP_EXPIRE_MINUTES)
+        expires_at = datetime.now(UTC).replace(tzinfo=None) + timedelta(
+            minutes=settings.OTP_EXPIRE_MINUTES
+        )
 
         otp = OtpVerification(
             user_id=user.user_id,
             otp_code=self._hash_otp(otp_code),
-            purpose=data.purpose,
+            purpose=data.purpose.value if hasattr(data.purpose, "value") else str(data.purpose),
             expires_at=expires_at,
-            verified_status=OtpVerificationStatus.PENDING,
+            verified_status=OtpVerificationStatus.PENDING.value
+            if hasattr(OtpVerificationStatus.PENDING, "value")
+            else str(OtpVerificationStatus.PENDING),
         )
         await self.otp_repo.create(otp)
         await self.db.commit()
@@ -69,7 +73,7 @@ class OtpService:
         if not otp:
             raise ConflictError("Invalid OTP")
 
-        if otp.expires_at < datetime.now(UTC):
+        if otp.expires_at.replace(tzinfo=None) < datetime.now(UTC).replace(tzinfo=None):
             await self.otp_repo.update_status(otp, OtpVerificationStatus.EXPIRED)
             await self.db.commit()
             raise ConflictError("OTP has expired")

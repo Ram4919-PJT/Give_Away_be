@@ -168,6 +168,76 @@ ON CONFLICT (item_donation_id) DO UPDATE
 SET donor_id = EXCLUDED.donor_id, category = EXCLUDED.category, description = EXCLUDED.description,
     quantity = EXCLUDED.quantity, pickup_address_id = EXCLUDED.pickup_address_id, status = EXCLUDED.status;
 
+-- Donor pledges (monthly commitments toward programs)
+CREATE TABLE IF NOT EXISTS recurring_gifts (
+  gift_id BIGSERIAL PRIMARY KEY,
+  donor_id BIGINT NOT NULL REFERENCES donor_profiles(donor_id),
+  program_id BIGINT NOT NULL REFERENCES programs(program_id),
+  organization_name VARCHAR(150) NOT NULL DEFAULT 'Aja Abayahastham',
+  amount DECIMAL(10, 2) NOT NULL,
+  frequency VARCHAR(20) NOT NULL DEFAULT 'MONTHLY',
+  start_date DATE NOT NULL,
+  next_payment_date DATE,
+  payments_made INT NOT NULL DEFAULT 0,
+  status VARCHAR(50) NOT NULL DEFAULT 'ACTIVE',
+  payment_method VARCHAR(50),
+  paused_at TIMESTAMP,
+  cancelled_at TIMESTAMP,
+  completed_at TIMESTAMP,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+INSERT INTO recurring_gifts (
+  gift_id, donor_id, program_id, organization_name, amount, frequency,
+  start_date, next_payment_date, payments_made, status, payment_method
+) VALUES
+  (1, 1, 2, 'Asha Kiran Foundation', 2000.00, 'MONTHLY', (CURRENT_DATE - INTERVAL '120 days')::date, (CURRENT_DATE + INTERVAL '5 days')::date, 4, 'ACTIVE', 'UPI AutoPay'),
+  (2, 1, 1, 'Hope Health Trust', 1500.00, 'MONTHLY', (CURRENT_DATE - INTERVAL '180 days')::date, (CURRENT_DATE + INTERVAL '12 days')::date, 6, 'ACTIVE', 'Card'),
+  (3, 1, 6, 'Care & Share Relief', 1000.00, 'MONTHLY', (CURRENT_DATE - INTERVAL '90 days')::date, (CURRENT_DATE + INTERVAL '20 days')::date, 3, 'ACTIVE', 'UPI AutoPay'),
+  (4, 1, 5, 'Green Earth Initiative', 1500.00, 'QUARTERLY', (CURRENT_DATE - INTERVAL '240 days')::date, (CURRENT_DATE + INTERVAL '40 days')::date, 2, 'ACTIVE', 'Net Banking'),
+  (5, 1, 4, 'Elder Care Mission', 500.00, 'MONTHLY', (CURRENT_DATE - INTERVAL '60 days')::date, (CURRENT_DATE + INTERVAL '8 days')::date, 2, 'ACTIVE', 'UPI'),
+  (6, 1, 8, 'Smile Education Trust', 400.00, 'WEEKLY', (CURRENT_DATE - INTERVAL '45 days')::date, (CURRENT_DATE + INTERVAL '3 days')::date, 6, 'ACTIVE', 'UPI AutoPay'),
+  (7, 1, 3, 'Care & Share Relief', 2000.00, 'MONTHLY', (CURRENT_DATE - INTERVAL '150 days')::date, NULL, 4, 'PAUSED', 'Card'),
+  (8, 1, 7, 'Women Rise Collective', 1000.00, 'MONTHLY', (CURRENT_DATE - INTERVAL '300 days')::date, NULL, 2, 'CANCELLED', 'UPI AutoPay'),
+  (9, 1, 2, 'Asha Kiran Foundation', 2500.00, 'MONTHLY', (CURRENT_DATE - INTERVAL '400 days')::date, NULL, 12, 'COMPLETED', 'Card'),
+  (10, 3, 2, 'Asha Kiran Foundation', 800.00, 'MONTHLY', (CURRENT_DATE - INTERVAL '70 days')::date, (CURRENT_DATE + INTERVAL '9 days')::date, 2, 'ACTIVE', 'Card')
+ON CONFLICT (gift_id) DO UPDATE SET
+  donor_id = EXCLUDED.donor_id,
+  program_id = EXCLUDED.program_id,
+  organization_name = EXCLUDED.organization_name,
+  amount = EXCLUDED.amount,
+  frequency = EXCLUDED.frequency,
+  start_date = EXCLUDED.start_date,
+  next_payment_date = EXCLUDED.next_payment_date,
+  payments_made = EXCLUDED.payments_made,
+  status = EXCLUDED.status,
+  payment_method = EXCLUDED.payment_method;
+
+INSERT INTO donor_pledges (
+  pledge_id, donor_id, program_id, organization_name, monthly_amount, duration_months,
+  start_date, payments_made, status, payment_method, next_payment_date
+) VALUES
+  (1, 1, 2, 'Asha Kiran Foundation', 1000.00, 12, (CURRENT_DATE - INTERVAL '90 days')::date, 3, 'ACTIVE', 'UPI AutoPay', (CURRENT_DATE + INTERVAL '3 days')::date),
+  (2, 1, 1, 'Hope Health Trust', 2500.00, 6, (CURRENT_DATE - INTERVAL '120 days')::date, 4, 'ACTIVE', 'Card', (CURRENT_DATE + INTERVAL '10 days')::date),
+  (3, 1, 8, 'Smile Education Trust', 1500.00, 12, (CURRENT_DATE - INTERVAL '200 days')::date, 8, 'ACTIVE', 'UPI AutoPay', (CURRENT_DATE + INTERVAL '18 days')::date),
+  (4, 1, 5, 'Green Earth Initiative', 500.00, 24, (CURRENT_DATE - INTERVAL '60 days')::date, 5, 'ACTIVE', 'Net Banking', (CURRENT_DATE + INTERVAL '25 days')::date),
+  (5, 1, 3, 'Care & Share Relief', 2000.00, 6, (CURRENT_DATE - INTERVAL '400 days')::date, 6, 'COMPLETED', 'UPI AutoPay', NULL),
+  (6, 1, 7, 'Women Rise Collective', 3000.00, 3, (CURRENT_DATE - INTERVAL '350 days')::date, 3, 'COMPLETED', 'Card', NULL),
+  (7, 1, 4, 'Elder Care Mission', 1000.00, 12, (CURRENT_DATE - INTERVAL '180 days')::date, 1, 'CANCELLED', 'UPI AutoPay', NULL),
+  (8, 3, 2, 'Asha Kiran Foundation', 2000.00, 12, (CURRENT_DATE - INTERVAL '80 days')::date, 2, 'ACTIVE', 'Card', (CURRENT_DATE + INTERVAL '7 days')::date)
+ON CONFLICT (pledge_id) DO UPDATE SET
+  donor_id = EXCLUDED.donor_id,
+  program_id = EXCLUDED.program_id,
+  organization_name = EXCLUDED.organization_name,
+  monthly_amount = EXCLUDED.monthly_amount,
+  duration_months = EXCLUDED.duration_months,
+  start_date = EXCLUDED.start_date,
+  payments_made = EXCLUDED.payments_made,
+  status = EXCLUDED.status,
+  payment_method = EXCLUDED.payment_method,
+  next_payment_date = EXCLUDED.next_payment_date;
+
 INSERT INTO assistance_applications (application_id, receiver_id, purpose, amount_requested, status) VALUES
   (1, 1, 'Kidney Dialysis Medical Relief', 30000.00, 'APPROVED'),
   (2, 1, 'Monthly Medicine Support', 8000.00, 'COMPLETED'),
@@ -285,6 +355,8 @@ SELECT setval('rejection_reasons_reason_id_seq', GREATEST((SELECT MAX(reason_id)
 SELECT setval('fund_pools_pool_id_seq', GREATEST((SELECT MAX(pool_id) FROM fund_pools), 1));
 SELECT setval('money_donations_donation_id_seq', GREATEST((SELECT MAX(donation_id) FROM money_donations), 1));
 SELECT setval('item_donations_item_donation_id_seq', GREATEST((SELECT MAX(item_donation_id) FROM item_donations), 1));
+SELECT setval('donor_pledges_pledge_id_seq', GREATEST((SELECT MAX(pledge_id) FROM donor_pledges), 1));
+SELECT setval('recurring_gifts_gift_id_seq', GREATEST((SELECT MAX(gift_id) FROM recurring_gifts), 1));
 SELECT setval('assistance_applications_application_id_seq', GREATEST((SELECT MAX(application_id) FROM assistance_applications), 1));
 SELECT setval('ngo_item_requests_request_id_seq', GREATEST((SELECT MAX(request_id) FROM ngo_item_requests), 1));
 SELECT setval('ngo_fund_requests_request_id_seq', GREATEST((SELECT MAX(request_id) FROM ngo_fund_requests), 1));

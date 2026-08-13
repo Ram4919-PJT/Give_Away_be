@@ -91,6 +91,15 @@ class AuthService:
         status_value = (
             user.status.value if hasattr(user.status, "value") else str(user.status)
         )
+        if status_value == UserStatus.PENDING.value:
+            await self.audit_repo.create(
+                user_id=user.user_id,
+                ip_address=ip_address,
+                user_agent=user_agent,
+                status=LoginAuditStatus.FAILED,
+            )
+            await self.db.commit()
+            raise AuthenticationError("Your account is awaiting admin approval")
         if status_value != UserStatus.ACTIVE.value:
             await self.audit_repo.create(
                 user_id=user.user_id,

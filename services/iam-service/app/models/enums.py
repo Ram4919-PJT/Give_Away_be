@@ -13,6 +13,7 @@ class RoleName(str, Enum):
 class UserStatus(str, Enum):
     """User account status."""
 
+    PENDING = "PENDING"
     ACTIVE = "ACTIVE"
     INACTIVE = "INACTIVE"
     SUSPENDED = "SUSPENDED"
