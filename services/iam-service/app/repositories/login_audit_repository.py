@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from datetime import datetime
-from uuid import UUID
 
 from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -20,7 +19,7 @@ class LoginAuditRepository(BaseRepository[LoginAudit]):
     async def create(
         self,
         *,
-        user_id: UUID | None,
+        user_id: int | None,
         ip_address: str | None,
         status: LoginAuditStatus,
         user_agent: str | None = None,
@@ -29,11 +28,11 @@ class LoginAuditRepository(BaseRepository[LoginAudit]):
             user_id=user_id,
             ip_address=ip_address,
             user_agent=user_agent,
-            status=status,
+            status=status.value if hasattr(status, "value") else status,
         )
         return await super().create(audit)
 
-    async def get_by_id(self, audit_id: UUID) -> LoginAudit | None:
+    async def get_by_id(self, audit_id: int) -> LoginAudit | None:
         stmt = select(LoginAudit).where(LoginAudit.audit_id == audit_id)
         result = await self.session.execute(stmt)
         return result.scalar_one_or_none()
@@ -48,9 +47,22 @@ class LoginAuditRepository(BaseRepository[LoginAudit]):
         result = await self.session.execute(stmt)
         return list(result.scalars().all())
 
+    async def get_last_successful_login(self, user_id: int) -> LoginAudit | None:
+        stmt = (
+            select(LoginAudit)
+            .where(
+                LoginAudit.user_id == user_id,
+                LoginAudit.status == LoginAuditStatus.SUCCESS.value,
+            )
+            .order_by(LoginAudit.login_time.desc())
+            .limit(1)
+        )
+        result = await self.session.execute(stmt)
+        return result.scalar_one_or_none()
+
     async def get_user_login_history(
         self,
-        user_id: UUID,
+        user_id: int,
         *,
         skip: int = 0,
         limit: int = 50,
@@ -65,7 +77,7 @@ class LoginAuditRepository(BaseRepository[LoginAudit]):
         result = await self.session.execute(stmt)
         return list(result.scalars().all())
 
-    async def count_failed_attempts_since(self, user_id: UUID, since: datetime) -> int:
+    async def count_failed_attempts_since(self, user_id: int, since: datetime) -> int:
         stmt = (
             select(func.count())
             .select_from(LoginAudit)

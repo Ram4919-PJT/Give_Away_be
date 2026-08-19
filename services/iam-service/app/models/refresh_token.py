@@ -1,14 +1,12 @@
-import uuid
 from datetime import datetime
 from typing import TYPE_CHECKING
 
 from sqlalchemy import (
+    BigInteger,
     Boolean,
     DateTime,
     ForeignKey,
-    Index,
     String,
-    Uuid,
     func,
     text,
 )
@@ -23,19 +21,14 @@ if TYPE_CHECKING:
 class RefreshToken(Base):
     __tablename__ = "refresh_tokens"
 
-    __table_args__ = (
-        Index("ix_refresh_tokens_user_expires", "user_id", "expires_at"),
-    )
-
-    token_id: Mapped[uuid.UUID] = mapped_column(
-        Uuid(as_uuid=True),
+    token_id: Mapped[int] = mapped_column(
+        BigInteger,
         primary_key=True,
-        server_default=text("gen_random_uuid()"),
-        default=uuid.uuid4,
+        autoincrement=True,
     )
 
-    user_id: Mapped[uuid.UUID] = mapped_column(
-        Uuid(as_uuid=True),
+    user_id: Mapped[int] = mapped_column(
+        BigInteger,
         ForeignKey("users.user_id", ondelete="CASCADE"),
         nullable=False,
         index=True,
@@ -48,24 +41,24 @@ class RefreshToken(Base):
     )
 
     expires_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
+        DateTime,
         nullable=False,
     )
 
     is_revoked: Mapped[bool] = mapped_column(
         Boolean,
         nullable=False,
-        default=False,
         server_default=text("false"),
+        default=False,
     )
 
     revoked_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True),
+        DateTime,
         nullable=True,
     )
 
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
+        DateTime,
         nullable=False,
         server_default=func.now(),
     )

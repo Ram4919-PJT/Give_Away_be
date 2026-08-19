@@ -42,6 +42,10 @@ class Settings(BaseSettings):
     # CORS — comma-separated origins (use * only for local dev)
     CORS_ORIGINS: str = "http://localhost:5173,http://127.0.0.1:5173"
 
+    GATEWAY_INTERNAL_URL: str = "http://127.0.0.1:8000"
+    INTERNAL_NOTIFICATION_KEY: str = "dev-internal-notification-key-change-in-prod"
+    NOTIFICATIONS_ENABLED: bool = True
+
     @field_validator("JWT_SECRET_KEY")
     @classmethod
     def validate_jwt_secret(cls, value: str) -> str:

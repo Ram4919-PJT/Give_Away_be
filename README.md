@@ -137,13 +137,26 @@ uvicorn main:app --reload --port 8000
 
 ## Test credentials
 
-Register via Swagger or the web app, or use:
+Seed neat demo data into all three service databases:
 
-| Email | Password | Role |
-|-------|----------|------|
-| `donor@test.com` | `Test@1234` | Donor |
-| `receiver@test.com` | `Test@1234` | Receiver |
-| `ngo@test.com` | `Test@1234` | NGO |
+```powershell
+cd Give_Away_be
+python scripts\seed_database.py
+```
+
+Password for all seeded accounts: **`Test@1234`**
+
+| Email | Role | State |
+|-------|------|-------|
+| `admin@giveaway.org` | Admin | — |
+| `ananya.donor@gmail.com` | Donor | Verified |
+| `pending.donor@gmail.com` | Donor | Pending |
+| `ramesh.receiver@gmail.com` | Receiver | Verified |
+| `sita.receiver@gmail.com` | Receiver | Pending |
+| `contact@hopefoundation.org` | NGO | Verified |
+| `info@careshare.org` | NGO | Pending |
+
+Full list: [`scripts/TEST_LOGINS.md`](scripts/TEST_LOGINS.md)
 
 Mobile must be a 10-digit Indian number starting with 6–9 (e.g. `9876543210`).
 

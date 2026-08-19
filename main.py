@@ -4,7 +4,6 @@ Run with:
     python run.py
     uvicorn main:app --reload --port 8000
 """
-
 from __future__ import annotations
 
 import sys
@@ -12,6 +11,7 @@ from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 _ROOT = Path(__file__).resolve().parent
 _IAM_DIR = _ROOT / "services" / "iam-service"
@@ -44,6 +44,10 @@ def create_gateway() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+
+    uploads_dir = _ROOT / "uploads"
+    uploads_dir.mkdir(parents=True, exist_ok=True)
+    gateway.mount("/uploads", StaticFiles(directory=str(uploads_dir)), name="uploads")
 
     @gateway.get("/gateway/health", tags=["Gateway"])
     async def gateway_health() -> dict[str, str | int | bool]:

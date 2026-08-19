@@ -1,186 +1,105 @@
-import uuid
 from datetime import datetime
+from typing import TYPE_CHECKING, Any
 
 from sqlalchemy import (
+    BigInteger,
     DateTime,
-    Enum,
     ForeignKey,
+    Integer,
     Numeric,
     String,
     Text,
-    Uuid,
     func,
-    text,
 )
+from sqlalchemy.dialects.postgresql import JSON
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from core_app.db.base import Base
-from core_app.models.enums import ProfileStatus, ProgramStatus
 
 
 class Address(Base):
     __tablename__ = "addresses"
 
-    address_id: Mapped[uuid.UUID] = mapped_column(
-        Uuid(as_uuid=True),
-        primary_key=True,
-        server_default=text("gen_random_uuid()"),
-        default=uuid.uuid4,
-    )
-    user_id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), nullable=False, index=True)
-    line1: Mapped[str] = mapped_column(String(255), nullable=False)
-    line2: Mapped[str | None] = mapped_column(String(255))
+    address_id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    line1: Mapped[str] = mapped_column(Text, nullable=False)
     city: Mapped[str] = mapped_column(String(100), nullable=False)
     state: Mapped[str] = mapped_column(String(100), nullable=False)
-    postal_code: Mapped[str] = mapped_column(String(20), nullable=False)
-    country: Mapped[str] = mapped_column(String(100), nullable=False, server_default="India")
-    is_primary: Mapped[bool] = mapped_column(nullable=False, server_default=text("false"))
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), nullable=False, server_default=func.now()
-    )
-    updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now()
-    )
+    pincode: Mapped[str] = mapped_column(String(20), nullable=False)
+    latitude: Mapped[float | None] = mapped_column(Numeric(10, 7), nullable=True)
+    longitude: Mapped[float | None] = mapped_column(Numeric(10, 7), nullable=True)
+    country: Mapped[str | None] = mapped_column(String(100), nullable=True)
 
 
 class DonorProfile(Base):
     __tablename__ = "donor_profiles"
 
-    donor_profile_id: Mapped[uuid.UUID] = mapped_column(
-        Uuid(as_uuid=True),
-        primary_key=True,
-        server_default=text("gen_random_uuid()"),
-        default=uuid.uuid4,
-    )
-    user_id: Mapped[uuid.UUID] = mapped_column(
-        Uuid(as_uuid=True), nullable=False, unique=True, index=True
-    )
-    organization_name: Mapped[str | None] = mapped_column(String(255))
-    pan_number: Mapped[str | None] = mapped_column(String(20))
-    status: Mapped[ProfileStatus] = mapped_column(
-        Enum(ProfileStatus, name="profile_status_enum"),
-        nullable=False,
-        server_default=ProfileStatus.DRAFT.value,
-    )
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), nullable=False, server_default=func.now()
-    )
-    updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now()
-    )
+    donor_id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    user_id: Mapped[int] = mapped_column(BigInteger, unique=True, nullable=False)
+    full_name: Mapped[str] = mapped_column(String(100), nullable=False)
+    mobile: Mapped[str] = mapped_column(String(20), nullable=False)
+    email: Mapped[str] = mapped_column(String(100), nullable=False)
+    address_id: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("addresses.address_id"))
+    location_latitude: Mapped[float | None] = mapped_column(Numeric(10, 7), nullable=True)
+    location_longitude: Mapped[float | None] = mapped_column(Numeric(10, 7), nullable=True)
+    location_city: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    location_state: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    location_country: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    location_updated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    preferences: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
 
 
 class ReceiverProfile(Base):
     __tablename__ = "receiver_profiles"
 
-    receiver_profile_id: Mapped[uuid.UUID] = mapped_column(
-        Uuid(as_uuid=True),
-        primary_key=True,
-        server_default=text("gen_random_uuid()"),
-        default=uuid.uuid4,
-    )
-    user_id: Mapped[uuid.UUID] = mapped_column(
-        Uuid(as_uuid=True), nullable=False, unique=True, index=True
-    )
-    household_size: Mapped[int | None] = mapped_column()
-    monthly_income: Mapped[float | None] = mapped_column(Numeric(12, 2))
-    status: Mapped[ProfileStatus] = mapped_column(
-        Enum(ProfileStatus, name="profile_status_enum", create_constraint=False),
-        nullable=False,
-        server_default=ProfileStatus.DRAFT.value,
-    )
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), nullable=False, server_default=func.now()
-    )
-    updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now()
-    )
-
-    beneficiaries: Mapped[list["Beneficiary"]] = relationship(back_populates="receiver_profile")
+    receiver_id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    user_id: Mapped[int] = mapped_column(BigInteger, unique=True, nullable=False)
+    full_name: Mapped[str] = mapped_column(String(100), nullable=False)
+    mobile: Mapped[str] = mapped_column(String(20), nullable=False)
+    email: Mapped[str] = mapped_column(String(100), nullable=False)
+    address_id: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("addresses.address_id"))
+    verification_status: Mapped[str] = mapped_column(String(50), default="REGISTERED")
 
 
 class NgoProfile(Base):
     __tablename__ = "ngo_profiles"
 
-    ngo_profile_id: Mapped[uuid.UUID] = mapped_column(
-        Uuid(as_uuid=True),
-        primary_key=True,
-        server_default=text("gen_random_uuid()"),
-        default=uuid.uuid4,
-    )
-    user_id: Mapped[uuid.UUID] = mapped_column(
-        Uuid(as_uuid=True), nullable=False, unique=True, index=True
-    )
-    registration_number: Mapped[str] = mapped_column(String(100), nullable=False)
-    organization_name: Mapped[str] = mapped_column(String(255), nullable=False)
-    focus_area: Mapped[str | None] = mapped_column(String(255))
-    status: Mapped[ProfileStatus] = mapped_column(
-        Enum(ProfileStatus, name="profile_status_enum", create_constraint=False),
-        nullable=False,
-        server_default=ProfileStatus.DRAFT.value,
-    )
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), nullable=False, server_default=func.now()
-    )
-    updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now()
-    )
+    ngo_id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    user_id: Mapped[int] = mapped_column(BigInteger, unique=True, nullable=False)
+    ngo_name: Mapped[str] = mapped_column(String(150), nullable=False)
+    registration_number: Mapped[str] = mapped_column(String(100), unique=True, nullable=False)
+    contact_person: Mapped[str] = mapped_column(String(100), nullable=False)
+    mobile: Mapped[str] = mapped_column(String(20), nullable=False)
+    address_id: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("addresses.address_id"))
+    verification_status: Mapped[str] = mapped_column(String(50), default="REGISTERED")
 
-    programs: Mapped[list["Program"]] = relationship(back_populates="ngo_profile")
+    beneficiaries: Mapped[list["Beneficiary"]] = relationship(back_populates="ngo_profile", cascade="all, delete-orphan")
 
 
 class Beneficiary(Base):
     __tablename__ = "beneficiaries"
 
-    beneficiary_id: Mapped[uuid.UUID] = mapped_column(
-        Uuid(as_uuid=True),
-        primary_key=True,
-        server_default=text("gen_random_uuid()"),
-        default=uuid.uuid4,
-    )
-    receiver_profile_id: Mapped[uuid.UUID] = mapped_column(
-        Uuid(as_uuid=True),
-        ForeignKey("receiver_profiles.receiver_profile_id", ondelete="CASCADE"),
-        nullable=False,
-        index=True,
-    )
-    full_name: Mapped[str] = mapped_column(String(255), nullable=False)
-    age: Mapped[int | None] = mapped_column()
-    relationship_type: Mapped[str | None] = mapped_column(String(100))
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), nullable=False, server_default=func.now()
-    )
+    beneficiary_id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    ngo_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("ngo_profiles.ngo_id", ondelete="CASCADE"), nullable=False)
+    name: Mapped[str] = mapped_column(String(100), nullable=False)
+    age: Mapped[int] = mapped_column(Integer, nullable=False)
+    details: Mapped[str | None] = mapped_column(Text)
 
-    receiver_profile: Mapped["ReceiverProfile"] = relationship(back_populates="beneficiaries")
+    ngo_profile: Mapped["NgoProfile"] = relationship(back_populates="beneficiaries")
 
 
 class Program(Base):
     __tablename__ = "programs"
 
-    program_id: Mapped[uuid.UUID] = mapped_column(
-        Uuid(as_uuid=True),
-        primary_key=True,
-        server_default=text("gen_random_uuid()"),
-        default=uuid.uuid4,
-    )
-    ngo_profile_id: Mapped[uuid.UUID] = mapped_column(
-        Uuid(as_uuid=True),
-        ForeignKey("ngo_profiles.ngo_profile_id", ondelete="CASCADE"),
-        nullable=False,
-        index=True,
-    )
-    title: Mapped[str] = mapped_column(String(255), nullable=False)
+    program_id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    program_name: Mapped[str] = mapped_column(String(150), nullable=False)
     description: Mapped[str | None] = mapped_column(Text)
-    status: Mapped[ProgramStatus] = mapped_column(
-        Enum(ProgramStatus, name="program_status_enum"),
-        nullable=False,
-        server_default=ProgramStatus.DRAFT.value,
-    )
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), nullable=False, server_default=func.now()
-    )
-    updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now()
-    )
-
-    ngo_profile: Mapped["NgoProfile"] = relationship(back_populates="programs")
+    category: Mapped[str] = mapped_column(String(100), nullable=False)
+    status: Mapped[str] = mapped_column(String(50), default="ACTIVE")
+    ngo_id: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("ngo_profiles.ngo_id"), nullable=True)
+    goal_amount: Mapped[float | None] = mapped_column(Numeric(12, 2), nullable=True)
+    amount_raised: Mapped[float | None] = mapped_column(Numeric(12, 2), nullable=True, default=0)
+    donors_count: Mapped[int | None] = mapped_column(Integer, nullable=True, default=0)
+    image_url: Mapped[str | None] = mapped_column(Text, nullable=True)
+    start_date: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    end_date: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    created_at: Mapped[datetime | None] = mapped_column(DateTime, server_default=func.now())

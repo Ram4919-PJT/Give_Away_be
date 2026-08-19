@@ -23,4 +23,6 @@ async def upsert_preference(
     user: TokenUser = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    return await notification_service.upsert_preference(db, user, payload)
+    return await notification_service.upsert_preference(
+        db, user, channel=payload.channel, is_enabled=payload.is_enabled
+    )

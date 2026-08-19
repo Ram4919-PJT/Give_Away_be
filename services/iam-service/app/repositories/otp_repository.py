@@ -27,8 +27,12 @@ class OtpRepository(BaseRepository[OtpVerification]):
         stmt = select(OtpVerification).where(
             OtpVerification.user_id == user_id,
             OtpVerification.otp_code == otp_code_hash,
-            OtpVerification.purpose == purpose,
-            OtpVerification.verified_status == OtpVerificationStatus.PENDING,
+            OtpVerification.purpose == (purpose.value if hasattr(purpose, "value") else purpose),
+            OtpVerification.verified_status == (
+                OtpVerificationStatus.PENDING.value
+                if hasattr(OtpVerificationStatus.PENDING, "value")
+                else OtpVerificationStatus.PENDING
+            ),
         )
         result = await self.session.execute(stmt)
         return result.scalar_one_or_none()
@@ -57,7 +61,7 @@ class OtpRepository(BaseRepository[OtpVerification]):
         otp: OtpVerification,
         status: OtpVerificationStatus,
     ) -> OtpVerification:
-        otp.verified_status = status
+        otp.verified_status = status.value if hasattr(status, "value") else status
         await self.session.flush()
         await self.session.refresh(otp)
         return otp
@@ -68,7 +72,11 @@ class OtpRepository(BaseRepository[OtpVerification]):
             .select_from(OtpVerification)
             .where(
                 OtpVerification.user_id == user_id,
-                OtpVerification.verified_status == OtpVerificationStatus.PENDING,
+                OtpVerification.verified_status == (
+                    OtpVerificationStatus.PENDING.value
+                    if hasattr(OtpVerificationStatus.PENDING, "value")
+                    else OtpVerificationStatus.PENDING
+                ),
             )
         )
         result = await self.session.execute(stmt)

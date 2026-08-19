@@ -1,5 +1,3 @@
-from uuid import UUID
-
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -19,15 +17,23 @@ async def get_current_user(
 ) -> User:
     try:
         payload = decode_access_token(credentials.credentials)
-        user_id = UUID(payload["sub"])
-    except (TokenDecodeError, ValueError) as exc:
+        user_id = int(payload["sub"])
+    except (TokenDecodeError, ValueError, TypeError, KeyError) as exc:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid or expired access token",
         ) from exc
 
     user = await UserRepository(db).get_by_id(user_id)
-    if not user or user.status != UserStatus.ACTIVE:
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="User not found or inactive",
+        )
+    status_value = (
+        user.status.value if hasattr(user.status, "value") else str(user.status)
+    )
+    if status_value != UserStatus.ACTIVE.value:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="User not found or inactive",

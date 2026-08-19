@@ -33,6 +33,22 @@ class Settings(BaseSettings):
 
     CORS_ORIGINS: str = "http://localhost:5173,http://127.0.0.1:5173"
 
+    INTERNAL_NOTIFICATION_KEY: str = "dev-internal-notification-key-change-in-prod"
+
+    GATEWAY_INTERNAL_URL: str = "http://127.0.0.1:8000"
+
+    EMAIL_ENABLED: bool = False
+    SMTP_HOST: str = "smtp.gmail.com"
+    SMTP_PORT: int = 587
+    SMTP_USERNAME: str = ""
+    SMTP_PASSWORD: str = ""
+    SMTP_FROM_EMAIL: str = "noreply@giveaway.local"
+    SMTP_FROM_NAME: str = "Give Away"
+    SMTP_USE_TLS: bool = True
+    SMTP_TIMEOUT: int = 20
+
+    APP_PUBLIC_URL: str = "http://localhost:5173"
+
     @field_validator("JWT_SECRET_KEY")
     @classmethod
     def validate_jwt_secret(cls, value: str) -> str:

@@ -10,6 +10,7 @@ from comm_app.config import settings
 from comm_app.db.base import Base
 from comm_app.models import (  # noqa: F401
     DeliveryLog,
+    EmailDeliveryLog,
     Notification,
     NotificationTemplate,
     UserNotificationPreference,

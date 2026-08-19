@@ -1,148 +1,112 @@
-import uuid
-from datetime import datetime
+from datetime import date, datetime, time
+from typing import TYPE_CHECKING, Any
 
-from sqlalchemy import DateTime, Enum, ForeignKey, Integer, Numeric, String, Text, Uuid, func, text
+from sqlalchemy import BigInteger, Boolean, Date, DateTime, ForeignKey, Integer, Numeric, String, Text, Time, func
+from sqlalchemy.dialects.postgresql import JSON
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from core_app.db.base import Base
-from core_app.models.enums import DonationStatus, DonationType
+
+if TYPE_CHECKING:
+    from core_app.models.item_donation_document import ItemDonationDocument
+    from core_app.models.item_donation_request import ItemDonationRequest
 
 
-class Donation(Base):
-    __tablename__ = "donations"
+class MoneyDonation(Base):
+    __tablename__ = "money_donations"
 
-    donation_id: Mapped[uuid.UUID] = mapped_column(
-        Uuid(as_uuid=True),
-        primary_key=True,
-        server_default=text("gen_random_uuid()"),
-        default=uuid.uuid4,
-    )
-    donor_user_id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), nullable=False, index=True)
-    donation_type: Mapped[DonationType] = mapped_column(
-        Enum(DonationType, name="donation_type_enum"),
-        nullable=False,
-    )
-    status: Mapped[DonationStatus] = mapped_column(
-        Enum(DonationStatus, name="donation_status_enum"),
-        nullable=False,
-        server_default=DonationStatus.DRAFT.value,
+    donation_id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    donor_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("donor_profiles.donor_id"), nullable=False)
+    program_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("programs.program_id"), nullable=False)
+    amount: Mapped[float] = mapped_column(Numeric(10, 2), nullable=False)
+    payment_status: Mapped[str] = mapped_column(String(50), nullable=False, default="INITIATED")
+    currency: Mapped[str] = mapped_column(String(10), nullable=False, default="INR")
+    razorpay_order_id: Mapped[str | None] = mapped_column(String(100), nullable=True, unique=True, index=True)
+    razorpay_payment_id: Mapped[str | None] = mapped_column(String(100), nullable=True, unique=True, index=True)
+    payment_method: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    guest_mobile: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    guest_name: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    failure_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+    paid_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    donated_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+
+
+class ItemDonation(Base):
+    __tablename__ = "item_donations"
+
+    item_donation_id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    donor_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("donor_profiles.donor_id"), nullable=False)
+    category_id: Mapped[int | None] = mapped_column(
+        BigInteger,
+        ForeignKey("item_categories.category_id", ondelete="SET NULL"),
+        nullable=True,
         index=True,
     )
-    notes: Mapped[str | None] = mapped_column(Text)
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), nullable=False, server_default=func.now()
+    item_name: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    category: Mapped[str] = mapped_column(String(100), nullable=False)
+    subcategory: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    description: Mapped[str] = mapped_column(Text, nullable=False)
+    quantity: Mapped[int] = mapped_column(Integer, nullable=False)
+    quantity_available: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    quantity_reserved: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    pickup_address_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("addresses.address_id"), nullable=False)
+    condition: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    condition_note: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    brand: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    model_variant: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    category_details: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
+    preferences: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
+    display_city: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    display_state: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    display_pincode: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    pickup_availability: Mapped[str | None] = mapped_column(Text, nullable=True)
+    preferred_pickup_time: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    delivery_available: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    urgency: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    additional_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    status: Mapped[str] = mapped_column(String(50), nullable=False, default="DRAFT")
+    submitted_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    reviewed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    reviewed_by_user_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    rejection_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+    change_request_comment: Mapped[str | None] = mapped_column(Text, nullable=True)
+    inventory_item_id: Mapped[int | None] = mapped_column(
+        BigInteger,
+        ForeignKey("inventory_items.item_id", ondelete="SET NULL"),
+        nullable=True,
     )
-    updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now()
+
+    pickup_schedules: Mapped[list["PickupSchedule"]] = relationship(
+        back_populates="item_donation",
+        cascade="all, delete-orphan",
     )
-
-    money_detail: Mapped["MoneyDonationDetail | None"] = relationship(
-        back_populates="donation", uselist=False
+    documents: Mapped[list["ItemDonationDocument"]] = relationship(
+        back_populates="item_donation",
+        cascade="all, delete-orphan",
     )
-    item_detail: Mapped["ItemDonationDetail | None"] = relationship(
-        back_populates="donation", uselist=False
+    requests: Mapped[list["ItemDonationRequest"]] = relationship(
+        back_populates="item_donation",
+        cascade="all, delete-orphan",
     )
-    items: Mapped[list["DonationItem"]] = relationship(back_populates="donation")
-    status_history: Mapped[list["DonationStatusHistory"]] = relationship(
-        back_populates="donation"
-    )
-
-
-class MoneyDonationDetail(Base):
-    __tablename__ = "money_donation_details"
-
-    money_donation_detail_id: Mapped[uuid.UUID] = mapped_column(
-        Uuid(as_uuid=True),
-        primary_key=True,
-        server_default=text("gen_random_uuid()"),
-        default=uuid.uuid4,
-    )
-    donation_id: Mapped[uuid.UUID] = mapped_column(
-        Uuid(as_uuid=True),
-        ForeignKey("donations.donation_id", ondelete="CASCADE"),
-        nullable=False,
-        unique=True,
-    )
-    amount: Mapped[float] = mapped_column(Numeric(14, 2), nullable=False)
-    currency: Mapped[str] = mapped_column(String(3), nullable=False, server_default="INR")
-    payment_reference: Mapped[str | None] = mapped_column(String(100))
-
-    donation: Mapped["Donation"] = relationship(back_populates="money_detail")
-
-
-class ItemDonationDetail(Base):
-    __tablename__ = "item_donation_details"
-
-    item_donation_detail_id: Mapped[uuid.UUID] = mapped_column(
-        Uuid(as_uuid=True),
-        primary_key=True,
-        server_default=text("gen_random_uuid()"),
-        default=uuid.uuid4,
-    )
-    donation_id: Mapped[uuid.UUID] = mapped_column(
-        Uuid(as_uuid=True),
-        ForeignKey("donations.donation_id", ondelete="CASCADE"),
-        nullable=False,
-        unique=True,
-    )
-    pickup_address_id: Mapped[uuid.UUID | None] = mapped_column(
-        Uuid(as_uuid=True),
-        ForeignKey("addresses.address_id", ondelete="SET NULL"),
-    )
-    estimated_value: Mapped[float | None] = mapped_column(Numeric(14, 2))
-
-    donation: Mapped["Donation"] = relationship(back_populates="item_detail")
-
-
-class DonationItem(Base):
-    __tablename__ = "donation_items"
-
-    donation_item_id: Mapped[uuid.UUID] = mapped_column(
-        Uuid(as_uuid=True),
-        primary_key=True,
-        server_default=text("gen_random_uuid()"),
-        default=uuid.uuid4,
-    )
-    donation_id: Mapped[uuid.UUID] = mapped_column(
-        Uuid(as_uuid=True),
-        ForeignKey("donations.donation_id", ondelete="CASCADE"),
-        nullable=False,
-        index=True,
-    )
-    item_name: Mapped[str] = mapped_column(String(255), nullable=False)
-    quantity: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text("1"))
-    unit: Mapped[str | None] = mapped_column(String(50))
-    description: Mapped[str | None] = mapped_column(Text)
-
-    donation: Mapped["Donation"] = relationship(back_populates="items")
 
 
 class DonationStatusHistory(Base):
     __tablename__ = "donation_status_history"
 
-    history_id: Mapped[uuid.UUID] = mapped_column(
-        Uuid(as_uuid=True),
-        primary_key=True,
-        server_default=text("gen_random_uuid()"),
-        default=uuid.uuid4,
-    )
-    donation_id: Mapped[uuid.UUID] = mapped_column(
-        Uuid(as_uuid=True),
-        ForeignKey("donations.donation_id", ondelete="CASCADE"),
-        nullable=False,
-        index=True,
-    )
-    from_status: Mapped[DonationStatus | None] = mapped_column(
-        Enum(DonationStatus, name="donation_status_enum", create_constraint=False)
-    )
-    to_status: Mapped[DonationStatus] = mapped_column(
-        Enum(DonationStatus, name="donation_status_enum", create_constraint=False),
-        nullable=False,
-    )
-    changed_by: Mapped[uuid.UUID | None] = mapped_column(Uuid(as_uuid=True))
-    comment: Mapped[str | None] = mapped_column(Text)
-    changed_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), nullable=False, server_default=func.now()
-    )
+    history_id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    donation_id: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    donation_type: Mapped[str] = mapped_column(String(50), nullable=False)
+    status: Mapped[str] = mapped_column(String(50), nullable=False)
+    changed_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
-    donation: Mapped["Donation"] = relationship(back_populates="status_history")
+
+class PickupSchedule(Base):
+    __tablename__ = "pickup_schedules"
+
+    pickup_id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    item_donation_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("item_donations.item_donation_id", ondelete="CASCADE"), nullable=False)
+    pickup_date: Mapped[date] = mapped_column(Date, nullable=False)
+    pickup_time: Mapped[time] = mapped_column(Time, nullable=False)
+    status: Mapped[str] = mapped_column(String(50), default="SCHEDULED")
+
+    item_donation: Mapped["ItemDonation"] = relationship(back_populates="pickup_schedules")

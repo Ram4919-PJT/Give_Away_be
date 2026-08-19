@@ -29,5 +29,5 @@ async def lifespan(_app: FastAPI) -> AsyncGenerator[None, None]:
 def register_communication(app: FastAPI) -> None:
     app.add_exception_handler(AppError, app_error_handler)
     app.add_exception_handler(ValueError, value_error_handler)
-    app.include_router(health_router, prefix="/api/v1/notifications")
-    app.include_router(api_router, prefix="/api/v1/notifications")
+    app.include_router(health_router, prefix="/api/v1/comm")
+    app.include_router(api_router, prefix="/api/v1")

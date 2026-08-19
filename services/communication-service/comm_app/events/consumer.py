@@ -3,7 +3,6 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
-from uuid import UUID
 
 from comm_app.db.session import AsyncSessionLocal
 from comm_app.services import notification_service
@@ -22,7 +21,7 @@ CONSUMER_NAME = "comm-worker-1"
 
 
 async def _handle_user_registered(payload: dict) -> None:
-    user_id = UUID(payload["user_id"])
+    user_id = int(payload["user_id"])
     role = payload.get("role", "USER").replace("_", " ").title()
     async with AsyncSessionLocal() as db:
         await notification_service.create_system_notification(
@@ -35,7 +34,7 @@ async def _handle_user_registered(payload: dict) -> None:
 
 
 async def _handle_otp_sent(payload: dict) -> None:
-    user_id = UUID(payload["user_id"])
+    user_id = int(payload["user_id"])
     purpose = payload.get("purpose", "verification").replace("_", " ").lower()
     async with AsyncSessionLocal() as db:
         await notification_service.create_system_notification(
