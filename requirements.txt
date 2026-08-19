@@ -1,11 +1,9 @@
 # Give Away Backend — aggregate requirements
 # Python 3.11+
 #
-# IAM Service (implemented):
-#   cd services/iam-service
+# Install from backend root:
 #   pip install -r requirements.txt
-#
-# Or install from backend root:
-#   pip install -r services/iam-service/requirements.txt
 
 -r services/iam-service/requirements.txt
+-r services/core-management-service/requirements.txt
+-r services/communication-service/requirements.txt

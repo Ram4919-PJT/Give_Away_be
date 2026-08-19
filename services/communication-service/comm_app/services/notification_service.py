@@ -175,6 +175,7 @@ async def mark_as_read(db: AsyncSession, user: TokenUser, notification_id: int) 
         notification.updated_at = datetime.now(UTC).replace(tzinfo=None)
         await db.commit()
         await db.refresh(notification)
+        await _decrement_unread_count(user.user_id)
     return _to_response(notification)
 
 
@@ -251,3 +252,57 @@ async def upsert_preference(db: AsyncSession, user: TokenUser, channel: str, is_
         "is_enabled": preference.enabled,
         "updated_at": None,
     }
+
+
+async def create_system_notification(
+    db: AsyncSession,
+    *,
+    user_id: int,
+    title: str,
+    body: str,
+) -> Notification:
+    notification = Notification(
+        user_id=user_id,
+        notification_type="SYSTEM",
+        title=title,
+        message=body,
+        status=UNREAD_STATUS,
+    )
+    db.add(notification)
+    await db.commit()
+    await db.refresh(notification)
+
+    await _increment_unread_count(user_id)
+    return notification
+
+
+async def _increment_unread_count(user_id: int) -> None:
+    from shared.redis.client import get_redis, is_redis_enabled
+    from shared.redis.keys import UNREAD_COUNT
+
+    if not is_redis_enabled():
+        return
+
+    redis = get_redis()
+    if redis is None:
+        return
+
+    await redis.incr(UNREAD_COUNT.format(user_id=str(user_id)))
+
+
+async def _decrement_unread_count(user_id: int) -> None:
+    from shared.redis.client import get_redis, is_redis_enabled
+    from shared.redis.keys import UNREAD_COUNT
+
+    if not is_redis_enabled():
+        return
+
+    redis = get_redis()
+    if redis is None:
+        return
+
+    key = UNREAD_COUNT.format(user_id=str(user_id))
+    value = await redis.decr(key)
+    if value < 0:
+        await redis.set(key, 0)
+

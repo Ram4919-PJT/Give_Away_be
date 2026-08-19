@@ -25,6 +25,7 @@ Web / Mobile  →  API Gateway (:8000)
 
 - **Python 3.11+**
 - **PostgreSQL** running locally
+- **Redis** (optional but recommended) — `docker compose up -d redis`
 - **pip**
 
 ## First-time setup
@@ -99,6 +100,15 @@ alembic upgrade head
 
 cd ..\..
 ```
+
+### 5. Start Redis (recommended)
+
+```powershell
+cd Give_Away_be
+docker compose up -d redis
+```
+
+Set `REDIS_ENABLED=false` in `.env` to run without Redis (events log locally; rate limits skipped).
 
 ## Start the backend
 
@@ -184,3 +194,25 @@ give-away-backend/
 | `services/iam-service/.env` | IAM database, JWT, OTP |
 | `services/core-management-service/.env` | Core database, JWT |
 | `services/communication-service/.env` | Communication database, JWT |
+
+## Redis
+
+Shared Redis infrastructure lives in `shared/redis/` and is configured in the root `.env`.
+
+| Feature | Redis usage |
+|---------|-------------|
+| Events | Stream `giveaway:events` — IAM publishes, Core + Communication consume |
+| Login rate limit | `iam:rate:login:{email}` — 5 attempts / 15 min |
+| OTP rate limit | `iam:rate:otp:{identifier}` — 3 attempts / 10 min |
+| Unread notifications | `comm:unread:{user_id}` counter |
+
+**Event flow:** `user.registered` → Core creates profile stub + Communication sends welcome notification.
+
+Check Redis status: `GET /gateway/health` → `redis_connected: true`
+
+```
+Give_Away_be/
+├── shared/redis/           # Shared client, events, rate limits
+├── docker-compose.yml      # Redis for local dev
+└── gateway/lifespan.py     # Connects Redis + starts consumers
+```

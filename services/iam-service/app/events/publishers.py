@@ -1,11 +1,13 @@
 import logging
 
+from shared.redis.events import publish_event
+
 logger = logging.getLogger(__name__)
 
 
 class EventPublisher:
-    """Stub publisher for development. Replace with Redis/RabbitMQ later."""
+    """Publishes domain events to the shared Redis stream."""
 
     @staticmethod
     async def publish(event_name: str, payload: dict) -> None:
-        logger.info("Event published: %s payload=%s", event_name, payload)
+        await publish_event(event_name, payload)

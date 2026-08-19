@@ -2,7 +2,9 @@ from datetime import UTC, datetime
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.exceptions import AuthenticationError, ConflictError
+from app.core.exceptions import AuthenticationError, ConflictError, RateLimitError
+from shared.redis.keys import LOGIN_RATE
+from shared.redis.rate_limit import is_rate_limited
 from app.core.otp_service import OtpService
 from app.core.security.password import hash_password, verify_password
 from app.core.token_service import TokenService
@@ -72,6 +74,7 @@ class AuthService:
                 "user_id": str(user.user_id),
                 "email": user.email,
                 "role": data.role_name.value,
+                "full_name": user.full_name,
             },
         )
 
@@ -95,6 +98,16 @@ class AuthService:
         ip_address: str | None,
         user_agent: str | None = None,
     ) -> TokenResponse:
+        from gateway.config import settings
+
+        rate_key = LOGIN_RATE.format(email=str(data.email).lower())
+        if await is_rate_limited(
+            rate_key,
+            max_attempts=settings.REDIS_LOGIN_RATE_LIMIT,
+            window_seconds=settings.REDIS_LOGIN_RATE_WINDOW,
+        ):
+            raise RateLimitError("Too many login attempts. Please try again later.")
+
         user = await self.user_repo.get_by_email(str(data.email))
 
         if not user or not verify_password(

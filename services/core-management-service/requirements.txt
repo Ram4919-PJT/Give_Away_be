@@ -5,3 +5,4 @@ asyncpg>=0.29
 pydantic-settings>=2.0
 python-jose[cryptography]>=3.3
 alembic>=1.13
+redis>=5.0

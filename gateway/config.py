@@ -16,6 +16,14 @@ class GatewaySettings(BaseSettings):
     GATEWAY_PORT: int = 8000
     GATEWAY_RELOAD: bool = True
 
+    REDIS_URL: str = "redis://localhost:6379/0"
+    REDIS_ENABLED: bool = True
+
+    REDIS_LOGIN_RATE_LIMIT: int = 5
+    REDIS_LOGIN_RATE_WINDOW: int = 900
+    REDIS_OTP_RATE_LIMIT: int = 3
+    REDIS_OTP_RATE_WINDOW: int = 600
+
     CORS_ORIGINS: str = (
         "http://localhost:5173,"
         "http://127.0.0.1:5173,"

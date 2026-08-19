@@ -1,3 +1,9 @@
+"""Give Away backend — API gateway entry point.
+
+Run with:
+    python run.py
+    uvicorn main:app --reload --port 8000
+"""
 from __future__ import annotations
 
 import sys
@@ -44,11 +50,16 @@ def create_gateway() -> FastAPI:
     gateway.mount("/uploads", StaticFiles(directory=str(uploads_dir)), name="uploads")
 
     @gateway.get("/gateway/health", tags=["Gateway"])
-    async def gateway_health() -> dict[str, str | int]:
+    async def gateway_health() -> dict[str, str | int | bool]:
+        from shared.redis.client import is_redis_enabled, ping_redis
+
+        redis_ok = await ping_redis() if is_redis_enabled() else False
         return {
             "status": "ok",
             "gateway": "Give Away API Gateway",
             "port": settings.GATEWAY_PORT,
+            "redis_enabled": is_redis_enabled(),
+            "redis_connected": redis_ok,
         }
 
     register_iam(gateway)
