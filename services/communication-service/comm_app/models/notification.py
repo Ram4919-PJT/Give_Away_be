@@ -11,13 +11,23 @@ class Notification(Base):
     __tablename__ = "notifications"
 
     notification_id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
-    user_id: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    user_id: Mapped[int] = mapped_column(BigInteger, nullable=False, index=True)
+    notification_type: Mapped[str] = mapped_column(String(50), nullable=False, default="ACCOUNT")
     title: Mapped[str] = mapped_column(String(150), nullable=False)
     message: Mapped[str] = mapped_column(Text, nullable=False)
     status: Mapped[str] = mapped_column(String(50), default="UNREAD")
+    related_entity_type: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    related_entity_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    action_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    read_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, server_default=func.now(), onupdate=func.now()
+    )
 
-    delivery_logs: Mapped[list["NotificationDeliveryLog"]] = relationship(back_populates="notification", cascade="all, delete-orphan")
+    delivery_logs: Mapped[list["NotificationDeliveryLog"]] = relationship(
+        back_populates="notification", cascade="all, delete-orphan"
+    )
 
 
 class NotificationTemplate(Base):

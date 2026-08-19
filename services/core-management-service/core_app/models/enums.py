@@ -1,83 +1,59 @@
-import enum
+from enum import Enum
 
 
-class ProfileStatus(str, enum.Enum):
+class ItemDonationStatus(str, Enum):
     DRAFT = "DRAFT"
-    ACTIVE = "ACTIVE"
-    SUSPENDED = "SUSPENDED"
-
-
-class VerificationStatus(str, enum.Enum):
-    PENDING = "PENDING"
-    IN_REVIEW = "IN_REVIEW"
-    APPROVED = "APPROVED"
+    PENDING_VERIFICATION = "PENDING_VERIFICATION"
+    SUBMITTED = "SUBMITTED"  # legacy alias
+    UNDER_REVIEW = "UNDER_REVIEW"
     REJECTED = "REJECTED"
+    APPROVED = "APPROVED"
+    AVAILABLE = "AVAILABLE"
+    REQUESTED = "REQUESTED"
+    RESERVED = "RESERVED"
+    ACCEPTED = "ACCEPTED"
+    FULFILLMENT_IN_PROGRESS = "FULFILLMENT_IN_PROGRESS"
+    COMPLETED = "COMPLETED"
+    PICKUP_SCHEDULED = "PICKUP_SCHEDULED"
+    RECEIVED = "RECEIVED"
+    DISTRIBUTED = "DISTRIBUTED"
+    CANCELLED = "CANCELLED"
+    LISTED = "LISTED"
+    UNAVAILABLE = "UNAVAILABLE"
 
 
-class VerificationEntityType(str, enum.Enum):
-    DONOR = "DONOR"
-    RECEIVER = "RECEIVER"
-    NGO = "NGO"
-
-
-class DocumentType(str, enum.Enum):
-    ID_PROOF = "ID_PROOF"
-    ADDRESS_PROOF = "ADDRESS_PROOF"
-    REGISTRATION_CERT = "REGISTRATION_CERT"
-    PAN = "PAN"
+class ItemDocumentType(str, Enum):
+    ITEM_PHOTO = "ITEM_PHOTO"
+    INVOICE = "INVOICE"
     OTHER = "OTHER"
 
 
-class DonationType(str, enum.Enum):
-    MONEY = "MONEY"
-    ITEM = "ITEM"
-
-
-class DonationStatus(str, enum.Enum):
-    DRAFT = "DRAFT"
-    SUBMITTED = "SUBMITTED"
-    CONFIRMED = "CONFIRMED"
-    IN_TRANSIT = "IN_TRANSIT"
-    DELIVERED = "DELIVERED"
-    CANCELLED = "CANCELLED"
-
-
-class AssistanceRequestStatus(str, enum.Enum):
-    OPEN = "OPEN"
-    MATCHED = "MATCHED"
-    FULFILLED = "FULFILLED"
-    CLOSED = "CLOSED"
-    CANCELLED = "CANCELLED"
-
-
-class PickupStatus(str, enum.Enum):
-    REQUESTED = "REQUESTED"
-    SCHEDULED = "SCHEDULED"
-    COMPLETED = "COMPLETED"
-    CANCELLED = "CANCELLED"
-
-
-class InventoryStatus(str, enum.Enum):
-    AVAILABLE = "AVAILABLE"
-    RESERVED = "RESERVED"
-    ALLOCATED = "ALLOCATED"
-    DISBURSED = "DISBURSED"
-
-
-class FundLedgerEntryType(str, enum.Enum):
-    CREDIT = "CREDIT"
-    DEBIT = "DEBIT"
-
-
-class FundDisbursementStatus(str, enum.Enum):
+class ItemRequestStatus(str, Enum):
     PENDING = "PENDING"
-    APPROVED = "APPROVED"
-    DISBURSED = "DISBURSED"
+    ACCEPTED = "ACCEPTED"
     REJECTED = "REJECTED"
+    CANCELLED = "CANCELLED"
+    RESERVED = "RESERVED"
+    FULFILLMENT_IN_PROGRESS = "FULFILLMENT_IN_PROGRESS"
+    COMPLETED = "COMPLETED"
 
 
-class ProgramStatus(str, enum.Enum):
-    DRAFT = "DRAFT"
-    ACTIVE = "ACTIVE"
-    PAUSED = "PAUSED"
-    CLOSED = "CLOSED"
+class ItemCondition(str, Enum):
+    NEW = "NEW"
+    LIKE_NEW = "LIKE_NEW"
+    GOOD = "GOOD"
+    USED = "USED"
+    NEEDS_REPAIR = "NEEDS_REPAIR"
+
+
+CATALOG_VISIBLE_STATUSES = {
+    ItemDonationStatus.AVAILABLE.value,
+    ItemDonationStatus.LISTED.value,
+    ItemDonationStatus.REQUESTED.value,
+}
+
+PENDING_ADMIN_STATUSES = {
+    ItemDonationStatus.PENDING_VERIFICATION.value,
+    ItemDonationStatus.SUBMITTED.value,
+    ItemDonationStatus.UNDER_REVIEW.value,
+}

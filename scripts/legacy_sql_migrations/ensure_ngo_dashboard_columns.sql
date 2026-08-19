@@ -1,0 +1,13 @@
+-- NGO dashboard extensions: campaign ownership + request timestamps
+
+ALTER TABLE programs ADD COLUMN IF NOT EXISTS ngo_id BIGINT REFERENCES ngo_profiles(ngo_id);
+ALTER TABLE programs ADD COLUMN IF NOT EXISTS goal_amount NUMERIC(12, 2);
+ALTER TABLE programs ADD COLUMN IF NOT EXISTS amount_raised NUMERIC(12, 2) DEFAULT 0;
+ALTER TABLE programs ADD COLUMN IF NOT EXISTS donors_count INTEGER DEFAULT 0;
+ALTER TABLE programs ADD COLUMN IF NOT EXISTS image_url TEXT;
+ALTER TABLE programs ADD COLUMN IF NOT EXISTS start_date TIMESTAMP;
+ALTER TABLE programs ADD COLUMN IF NOT EXISTS end_date TIMESTAMP;
+ALTER TABLE programs ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT NOW();
+
+ALTER TABLE ngo_item_requests ADD COLUMN IF NOT EXISTS submitted_at TIMESTAMP DEFAULT NOW();
+ALTER TABLE ngo_fund_requests ADD COLUMN IF NOT EXISTS submitted_at TIMESTAMP DEFAULT NOW();

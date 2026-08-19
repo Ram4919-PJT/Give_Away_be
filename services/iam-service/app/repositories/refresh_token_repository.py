@@ -1,6 +1,6 @@
 from datetime import UTC, datetime
 
-from sqlalchemy import select, update
+from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -71,3 +71,17 @@ class RefreshTokenRepository(BaseRepository[RefreshToken]):
             .values(is_revoked=True, revoked_at=datetime.now(UTC).replace(tzinfo=None))
         )
         await self.session.execute(stmt)
+
+    async def count_active_for_user(self, user_id: int) -> int:
+        now = datetime.now(UTC).replace(tzinfo=None)
+        stmt = (
+            select(func.count())
+            .select_from(RefreshToken)
+            .where(
+                RefreshToken.user_id == user_id,
+                RefreshToken.is_revoked.is_(False),
+                RefreshToken.expires_at > now,
+            )
+        )
+        result = await self.session.execute(stmt)
+        return result.scalar_one() or 0

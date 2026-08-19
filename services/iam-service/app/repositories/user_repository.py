@@ -27,7 +27,7 @@ class UserRepository:
             email=str(data.email),
             mobile=data.mobile,
             password_hash=hash_password(data.password.get_secret_value()),
-            status=UserStatus.PENDING,
+            status=UserStatus.ACTIVE,
         )
         return await self.create(user)
 

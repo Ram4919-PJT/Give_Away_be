@@ -1,6 +1,7 @@
 from core_app.models.applications import (
     ApplicationStatusHistory,
     AssistanceApplication,
+    AssistanceApplicationDocument,
     NgoFundRequest,
     NgoItemRequest,
 )
@@ -10,6 +11,9 @@ from core_app.models.donations import (
     MoneyDonation,
     PickupSchedule,
 )
+from core_app.models.item_category import ItemCategory
+from core_app.models.item_donation_request import ItemDonationRequest, ItemDonationVerificationHistory
+from core_app.models.item_donation_document import ItemDonationDocument
 from core_app.models.pledges import DonorPledge
 from core_app.models.recurring_gifts import RecurringGift
 from core_app.models.funds import (
@@ -31,7 +35,9 @@ from core_app.models.profiles import (
     ReceiverProfile,
 )
 from core_app.models.verification import (
+    KycMobileOtp,
     RejectionReason,
+    VerificationAuditLog,
     VerificationDocument,
     VerificationRequest,
     VerificationStatusHistory,
@@ -42,6 +48,7 @@ __all__ = [
     "Allocation",
     "ApplicationStatusHistory",
     "AssistanceApplication",
+    "AssistanceApplicationDocument",
     "Beneficiary",
     "Disbursement",
     "DonationStatusHistory",
@@ -52,7 +59,12 @@ __all__ = [
     "FundPool",
     "InventoryItem",
     "InventoryTransaction",
+    "KycMobileOtp",
+    "ItemCategory",
     "ItemDonation",
+    "ItemDonationDocument",
+    "ItemDonationRequest",
+    "ItemDonationVerificationHistory",
     "MoneyDonation",
     "NgoFundRequest",
     "NgoItemRequest",
@@ -61,6 +73,7 @@ __all__ = [
     "Program",
     "ReceiverProfile",
     "RejectionReason",
+    "VerificationAuditLog",
     "VerificationDocument",
     "VerificationRequest",
     "VerificationStatusHistory",

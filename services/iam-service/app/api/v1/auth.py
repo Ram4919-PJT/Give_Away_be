@@ -6,13 +6,16 @@ from app.db.session import get_db
 from app.dependencies.auth import get_current_user
 from app.models.user import User
 from app.schemas.auth import (
+    AccountPasswordRequest,
     ChangePasswordRequest,
+    DeleteAccountRequest,
     LoginRequest,
     LogoutRequest,
     PasswordResetConfirm,
     PasswordResetRequest,
     RefreshTokenRequest,
     RegisterRequest,
+    SecurityInfoResponse,
     TokenResponse,
 )
 from app.schemas.user import UserWithRoleResponse
@@ -67,6 +70,32 @@ async def change_password(
     db: AsyncSession = Depends(get_db),
 ):
     await AuthService(db).change_password(user.user_id, data)
+
+
+@router.get("/me/security", response_model=SecurityInfoResponse)
+async def security_info(
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    return await AuthService(db).get_security_info(user.user_id)
+
+
+@router.post("/account/deactivate", status_code=status.HTTP_204_NO_CONTENT)
+async def deactivate_account(
+    data: AccountPasswordRequest,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    await AuthService(db).deactivate_account(user.user_id, data)
+
+
+@router.post("/account/delete", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_account(
+    data: DeleteAccountRequest,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    await AuthService(db).delete_account(user.user_id, data)
 
 
 @router.get("/me", response_model=UserWithRoleResponse)

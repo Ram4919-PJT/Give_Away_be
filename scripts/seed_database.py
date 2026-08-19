@@ -41,6 +41,12 @@ RESTART IDENTITY CASCADE;
 
 CORE_TRUNCATE = """
 TRUNCATE TABLE
+  item_donation_verification_history,
+  item_donation_requests,
+  item_donation_documents,
+  item_categories,
+  recurring_gifts,
+  donor_pledges,
   allocations,
   disbursements,
   fund_ledger,

@@ -22,3 +22,29 @@ class NotFoundError(AppError):
 class ConflictError(AppError):
     def __init__(self, message: str):
         super().__init__(message, status_code=409)
+
+
+class KycValidationError(AppError):
+    def __init__(
+        self,
+        errors: list[dict[str, str]],
+        *,
+        code: str = "KYC_VALIDATION_FAILED",
+        message: str = "KYC submission is incomplete",
+    ):
+        self.errors = errors
+        self.code = code
+        super().__init__(message, status_code=400)
+
+
+class AssistanceValidationError(AppError):
+    def __init__(
+        self,
+        errors: list[dict[str, str]],
+        *,
+        code: str = "ASSISTANCE_VALIDATION_FAILED",
+        message: str = "Assistance application is incomplete",
+    ):
+        self.errors = errors
+        self.code = code
+        super().__init__(message, status_code=400)

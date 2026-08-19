@@ -4,8 +4,11 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from core_app.db.session import get_db
+from core_app.dependencies.auth import TokenUser, get_current_user
+from core_app.dependencies.ngo_auth import SUSPENDED_DETAIL, VERIFIED_ONLY_DETAIL
 from core_app.models.funds import Allocation
 from core_app.models.inventory import InventoryItem, InventoryTransaction
+from core_app.services.ngo_service import is_ngo_suspended, is_ngo_verified, require_ngo_profile
 
 router = APIRouter(prefix="/inventory", tags=["Inventory"])
 
@@ -23,7 +26,20 @@ class StockAllocateRequest(BaseModel):
 
 
 @router.get("")
-async def list_inventory(db: AsyncSession = Depends(get_db)):
+async def list_inventory(
+    db: AsyncSession = Depends(get_db),
+    user: TokenUser = Depends(get_current_user),
+):
+    if user.role == "NGO":
+        try:
+            profile = await require_ngo_profile(db, user.user_id)
+        except LookupError as exc:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+        if is_ngo_suspended(profile):
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=SUSPENDED_DETAIL)
+        if not is_ngo_verified(profile):
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=VERIFIED_ONLY_DETAIL)
+
     result = await db.execute(select(InventoryItem))
     return result.scalars().all()
 

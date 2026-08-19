@@ -71,3 +71,26 @@ class PasswordResetConfirm(BaseSchema):
 class ChangePasswordRequest(BaseSchema):
     current_password: SecretStr
     new_password: SecretStr = Field(..., min_length=8, max_length=128)
+
+
+class AccountPasswordRequest(BaseSchema):
+    password: SecretStr
+
+
+class DeleteAccountRequest(BaseSchema):
+    password: SecretStr
+    confirmation: str = Field(..., min_length=4, max_length=64)
+
+
+class LoginAuditEntry(BaseSchema):
+    login_time: str
+    ip_address: str | None = None
+    user_agent: str | None = None
+    status: str
+
+
+class SecurityInfoResponse(BaseSchema):
+    last_login_at: str | None = None
+    last_login_ip: str | None = None
+    active_sessions: int = 0
+    recent_logins: list[LoginAuditEntry] = []

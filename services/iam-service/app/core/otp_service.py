@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.config import settings
 from app.core.exceptions import ConflictError, NotFoundError
 from app.events.publishers import EventPublisher
+from app.integrations.notification_client import dispatch_email_only
 from app.models.enums import OtpPurpose, OtpVerificationStatus
 from app.models.otp_verification import OtpVerification
 from app.repositories.otp_repository import OtpRepository
@@ -50,6 +51,21 @@ class OtpService:
         if settings.OTP_LOG_TO_CONSOLE or settings.ENV == "development":
             print(
                 f"[DEV OTP] user={user.user_id} code={otp_code} purpose={data.purpose.value}"
+            )
+
+        if data.purpose == OtpPurpose.PASSWORD_RESET:
+            await dispatch_email_only(
+                user_id=int(user.user_id),
+                recipient_email=user.email,
+                recipient_name=user.full_name,
+                event_type="PASSWORD_RESET",
+                title="Your Give Away password reset code",
+                message="Use the verification code below to reset your password.",
+                template_data={
+                    "otp_code": otp_code,
+                    "expires_in": f"{settings.OTP_EXPIRE_MINUTES} minutes",
+                },
+                idempotency_key=f"password-reset-otp:{user.user_id}:{int(expires_at.timestamp())}",
             )
 
         await EventPublisher.publish(

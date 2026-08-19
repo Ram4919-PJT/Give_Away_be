@@ -31,7 +31,41 @@ class Settings(BaseSettings):
     JWT_SECRET_KEY: str = "dev-secret-key-minimum-32-characters-long"
     JWT_ALGORITHM: str = "HS256"
 
+    GATEWAY_INTERNAL_URL: str = "http://127.0.0.1:8000"
+    INTERNAL_NOTIFICATION_KEY: str = "dev-internal-notification-key-change-in-prod"
+    NOTIFICATIONS_ENABLED: bool = True
+    ADMIN_NOTIFY_USER_ID: int = 1
+    USER_APP_URL: str = "http://localhost:5173"
+    ADMIN_PORTAL_URL: str = "http://localhost:5174"
+
+    NOMINATIM_BASE_URL: str = "https://nominatim.openstreetmap.org"
+    NOMINATIM_USER_AGENT: str = "GiveAway/1.0 (contact@giveaway.org)"
+    NOMINATIM_MIN_INTERVAL_SEC: float = 1.1
+    NOMINATIM_COUNTRY_CODES: str = "in"
+    GEOCODING_TIMEOUT_SEC: float = 12.0
+
+    RAZORPAY_KEY_ID: str = ""
+    RAZORPAY_KEY_SECRET: str = ""
+    RAZORPAY_WEBHOOK_SECRET: str = ""
+    RAZORPAY_CURRENCY: str = "INR"
+    PAYMENT_DEV_MODE: bool = True
+
     CORS_ORIGINS: str = "http://localhost:5173,http://127.0.0.1:5173"
+
+    UPLOAD_DIR: str = str(CORE_SERVICE_ROOT.parent.parent / "uploads")
+    UPLOAD_URL_PREFIX: str = "/uploads"
+    MAX_UPLOAD_BYTES: int = 10 * 1024 * 1024
+    ALLOWED_UPLOAD_EXTENSIONS: str = ".jpg,.jpeg,.png,.webp,.pdf"
+
+    # Receiver KYC
+    KYC_PROVIDER: str = "MANUAL"
+    ALLOW_MOCK_KYC: bool = False
+    BANK_VERIFICATION_PROVIDER: str = "MANUAL"
+    KYC_HIGH_VALUE_THRESHOLD: float = 100_000.0
+    KYC_MEDIUM_VALUE_THRESHOLD: float = 50_000.0
+    KYC_MOBILE_OTP_EXPIRE_MINUTES: int = 10
+    KYC_MOBILE_OTP_MAX_ATTEMPTS: int = 5
+    KYC_MOBILE_OTP_RESEND_COOLDOWN_SEC: int = 60
 
     @field_validator("JWT_SECRET_KEY")
     @classmethod
@@ -48,6 +82,14 @@ class Settings(BaseSettings):
     @property
     def cors_allow_credentials(self) -> bool:
         return "*" not in self.cors_origins
+
+    @property
+    def upload_dir(self) -> Path:
+        return Path(self.UPLOAD_DIR)
+
+    @property
+    def allowed_upload_extensions(self) -> set[str]:
+        return {ext.strip().lower() for ext in self.ALLOWED_UPLOAD_EXTENSIONS.split(",") if ext.strip()}
 
 
 settings = Settings()

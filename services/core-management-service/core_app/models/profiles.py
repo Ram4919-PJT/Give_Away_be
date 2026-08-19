@@ -1,12 +1,17 @@
-from typing import TYPE_CHECKING
+from datetime import datetime
+from typing import TYPE_CHECKING, Any
 
 from sqlalchemy import (
     BigInteger,
+    DateTime,
     ForeignKey,
     Integer,
+    Numeric,
     String,
     Text,
+    func,
 )
+from sqlalchemy.dialects.postgresql import JSON
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from core_app.db.base import Base
@@ -20,6 +25,9 @@ class Address(Base):
     city: Mapped[str] = mapped_column(String(100), nullable=False)
     state: Mapped[str] = mapped_column(String(100), nullable=False)
     pincode: Mapped[str] = mapped_column(String(20), nullable=False)
+    latitude: Mapped[float | None] = mapped_column(Numeric(10, 7), nullable=True)
+    longitude: Mapped[float | None] = mapped_column(Numeric(10, 7), nullable=True)
+    country: Mapped[str | None] = mapped_column(String(100), nullable=True)
 
 
 class DonorProfile(Base):
@@ -31,6 +39,13 @@ class DonorProfile(Base):
     mobile: Mapped[str] = mapped_column(String(20), nullable=False)
     email: Mapped[str] = mapped_column(String(100), nullable=False)
     address_id: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("addresses.address_id"))
+    location_latitude: Mapped[float | None] = mapped_column(Numeric(10, 7), nullable=True)
+    location_longitude: Mapped[float | None] = mapped_column(Numeric(10, 7), nullable=True)
+    location_city: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    location_state: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    location_country: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    location_updated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    preferences: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
 
 
 class ReceiverProfile(Base):
@@ -80,3 +95,11 @@ class Program(Base):
     description: Mapped[str | None] = mapped_column(Text)
     category: Mapped[str] = mapped_column(String(100), nullable=False)
     status: Mapped[str] = mapped_column(String(50), default="ACTIVE")
+    ngo_id: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("ngo_profiles.ngo_id"), nullable=True)
+    goal_amount: Mapped[float | None] = mapped_column(Numeric(12, 2), nullable=True)
+    amount_raised: Mapped[float | None] = mapped_column(Numeric(12, 2), nullable=True, default=0)
+    donors_count: Mapped[int | None] = mapped_column(Integer, nullable=True, default=0)
+    image_url: Mapped[str | None] = mapped_column(Text, nullable=True)
+    start_date: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    end_date: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    created_at: Mapped[datetime | None] = mapped_column(DateTime, server_default=func.now())

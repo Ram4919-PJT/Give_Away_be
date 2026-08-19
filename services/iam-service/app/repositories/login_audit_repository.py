@@ -47,6 +47,19 @@ class LoginAuditRepository(BaseRepository[LoginAudit]):
         result = await self.session.execute(stmt)
         return list(result.scalars().all())
 
+    async def get_last_successful_login(self, user_id: int) -> LoginAudit | None:
+        stmt = (
+            select(LoginAudit)
+            .where(
+                LoginAudit.user_id == user_id,
+                LoginAudit.status == LoginAuditStatus.SUCCESS.value,
+            )
+            .order_by(LoginAudit.login_time.desc())
+            .limit(1)
+        )
+        result = await self.session.execute(stmt)
+        return result.scalar_one_or_none()
+
     async def get_user_login_history(
         self,
         user_id: int,

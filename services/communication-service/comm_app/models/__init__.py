@@ -1,3 +1,4 @@
+from comm_app.models.email_delivery import EmailDeliveryLog
 from comm_app.models.notification import (
     Notification,
     NotificationDeliveryLog,
@@ -8,6 +9,7 @@ from comm_app.models.notification import (
 
 __all__ = [
     "DeliveryLog",
+    "EmailDeliveryLog",
     "NotificationDeliveryLog",
     "Notification",
     "NotificationTemplate",

@@ -19,6 +19,18 @@ INSERT INTO addresses (address_id, line1, city, state, pincode) VALUES
 ON CONFLICT (address_id) DO UPDATE
 SET line1 = EXCLUDED.line1, city = EXCLUDED.city, state = EXCLUDED.state, pincode = EXCLUDED.pincode;
 
+-- Geographic coordinates for addresses (NGO + profile locations)
+UPDATE addresses SET latitude = 17.4239, longitude = 78.4738, country = 'India' WHERE address_id = 1;
+UPDATE addresses SET latitude = 12.9716, longitude = 77.5946, country = 'India' WHERE address_id = 2;
+UPDATE addresses SET latitude = 17.3616, longitude = 78.4747, country = 'India' WHERE address_id = 3;
+UPDATE addresses SET latitude = 17.9689, longitude = 79.5941, country = 'India' WHERE address_id = 4;
+UPDATE addresses SET latitude = 17.4486, longitude = 78.3908, country = 'India' WHERE address_id = 5;
+UPDATE addresses SET latitude = 13.0827, longitude = 80.2707, country = 'India' WHERE address_id = 6;
+UPDATE addresses SET latitude = 19.0760, longitude = 72.8777, country = 'India' WHERE address_id = 7;
+UPDATE addresses SET latitude = 28.5355, longitude = 77.3910, country = 'India' WHERE address_id = 8;
+UPDATE addresses SET latitude = 16.3067, longitude = 80.4365, country = 'India' WHERE address_id = 9;
+UPDATE addresses SET latitude = 22.5726, longitude = 88.3639, country = 'India' WHERE address_id = 10;
+
 -- Donor profiles (user 2 verified, 3 pending, 8 verified)
 INSERT INTO donor_profiles (donor_id, user_id, full_name, mobile, email, address_id) VALUES
   (1, 2, 'Ananya Sharma', '9876543211', 'ananya.donor@gmail.com', 1),
@@ -74,6 +86,20 @@ INSERT INTO programs (program_id, program_name, description, category, status) V
 ON CONFLICT (program_id) DO UPDATE
 SET program_name = EXCLUDED.program_name, description = EXCLUDED.description,
     category = EXCLUDED.category, status = EXCLUDED.status;
+
+-- Item categories (fixed list; admin CRUD can be added later)
+INSERT INTO item_categories (category_id, name, slug, description, is_active, sort_order) VALUES
+  (1, 'Clothing', 'clothing', 'Garments, blankets, and wearable items', true, 1),
+  (2, 'Medical Supplies', 'medical-supplies', 'First aid kits, wheelchairs, medical equipment', true, 2),
+  (3, 'Electronics', 'electronics', 'Laptops, phones, and electronic devices', true, 3),
+  (4, 'Books', 'books', 'Textbooks, story books, and educational material', true, 4),
+  (5, 'Food Packs', 'food-packs', 'Dry ration and packaged food items', true, 5),
+  (6, 'Furniture', 'furniture', 'Chairs, tables, beds, and home furnishings', true, 6),
+  (7, 'Toys', 'toys', 'Games and toys for children', true, 7),
+  (8, 'Blankets', 'blankets', 'Woolen and winter blankets', true, 8)
+ON CONFLICT (category_id) DO UPDATE
+SET name = EXCLUDED.name, slug = EXCLUDED.slug, description = EXCLUDED.description,
+    is_active = EXCLUDED.is_active, sort_order = EXCLUDED.sort_order;
 
 -- Verification requests (drive verified vs pending UX)
 INSERT INTO verification_requests (request_id, user_id, request_type, status, submitted_at) VALUES
@@ -158,36 +184,7 @@ SET donor_id = EXCLUDED.donor_id, program_id = EXCLUDED.program_id,
     amount = EXCLUDED.amount, payment_status = EXCLUDED.payment_status,
     donated_at = EXCLUDED.donated_at;
 
-INSERT INTO item_donations (item_donation_id, donor_id, category, description, quantity, pickup_address_id, status) VALUES
-  (1, 1, 'Clothing', 'Warm winter jackets and sweaters', 50, 1, 'RECEIVED'),
-  (2, 1, 'Medical Supplies', 'First Aid Kits and Wheelchairs', 5, 1, 'LISTED'),
-  (3, 3, 'Electronics', 'Refurbished Laptops for students', 10, 7, 'PICKUP_SCHEDULED'),
-  (4, 3, 'Books', 'Primary School Textbooks Set', 100, 7, 'RECEIVED'),
-  (5, 2, 'Food Packs', 'Rice and Pulses 5kg Bags', 20, 2, 'LISTED')
-ON CONFLICT (item_donation_id) DO UPDATE
-SET donor_id = EXCLUDED.donor_id, category = EXCLUDED.category, description = EXCLUDED.description,
-    quantity = EXCLUDED.quantity, pickup_address_id = EXCLUDED.pickup_address_id, status = EXCLUDED.status;
-
--- Donor pledges (monthly commitments toward programs)
-CREATE TABLE IF NOT EXISTS recurring_gifts (
-  gift_id BIGSERIAL PRIMARY KEY,
-  donor_id BIGINT NOT NULL REFERENCES donor_profiles(donor_id),
-  program_id BIGINT NOT NULL REFERENCES programs(program_id),
-  organization_name VARCHAR(150) NOT NULL DEFAULT 'Aja Abayahastham',
-  amount DECIMAL(10, 2) NOT NULL,
-  frequency VARCHAR(20) NOT NULL DEFAULT 'MONTHLY',
-  start_date DATE NOT NULL,
-  next_payment_date DATE,
-  payments_made INT NOT NULL DEFAULT 0,
-  status VARCHAR(50) NOT NULL DEFAULT 'ACTIVE',
-  payment_method VARCHAR(50),
-  paused_at TIMESTAMP,
-  cancelled_at TIMESTAMP,
-  completed_at TIMESTAMP,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
+-- Donor pledges and recurring gifts (tables created by Alembic migration)
 INSERT INTO recurring_gifts (
   gift_id, donor_id, program_id, organization_name, amount, frequency,
   start_date, next_payment_date, payments_made, status, payment_method
@@ -298,6 +295,24 @@ ON CONFLICT (item_id) DO UPDATE
 SET category = EXCLUDED.category, description = EXCLUDED.description,
     quantity = EXCLUDED.quantity, status = EXCLUDED.status;
 
+INSERT INTO item_donations (
+  item_donation_id, donor_id, category_id, category, item_name, description, quantity,
+  quantity_available, quantity_reserved, condition, pickup_address_id, status,
+  display_city, display_state, reviewed_at, inventory_item_id
+) VALUES
+  (1, 1, 1, 'Clothing', 'Winter Jackets', 'Warm winter jackets and sweaters', 50, 50, 0, 'GOOD', 1, 'COMPLETED', 'Mumbai', 'Maharashtra', NOW() - INTERVAL '2 days', 1),
+  (2, 1, 2, 'Medical Supplies', 'First Aid Kits', 'First Aid Kits and Wheelchairs', 5, 5, 0, 'NEW', 1, 'AVAILABLE', 'Mumbai', 'Maharashtra', NOW() - INTERVAL '1 day', 3),
+  (3, 3, 3, 'Electronics', 'Student Laptops', 'Refurbished Laptops for students', 10, 10, 0, 'GOOD', 7, 'PENDING_VERIFICATION', 'Bengaluru', 'Karnataka', NULL, NULL),
+  (4, 3, 4, 'Books', 'School Textbooks', 'Primary School Textbooks Set', 100, 100, 0, 'GOOD', 7, 'COMPLETED', 'Bengaluru', 'Karnataka', NOW() - INTERVAL '5 days', 4),
+  (5, 2, 5, 'Food Packs', 'Rice & Pulses', 'Rice and Pulses 5kg Bags', 20, 20, 0, 'NEW', 2, 'AVAILABLE', 'Delhi', 'Delhi', NULL, 5)
+ON CONFLICT (item_donation_id) DO UPDATE
+SET donor_id = EXCLUDED.donor_id, category_id = EXCLUDED.category_id, category = EXCLUDED.category,
+    item_name = EXCLUDED.item_name, description = EXCLUDED.description, quantity = EXCLUDED.quantity,
+    quantity_available = EXCLUDED.quantity_available, quantity_reserved = EXCLUDED.quantity_reserved,
+    condition = EXCLUDED.condition, pickup_address_id = EXCLUDED.pickup_address_id, status = EXCLUDED.status,
+    display_city = EXCLUDED.display_city, display_state = EXCLUDED.display_state,
+    reviewed_at = EXCLUDED.reviewed_at, inventory_item_id = EXCLUDED.inventory_item_id;
+
 INSERT INTO inventory_transactions (transaction_id, item_id, transaction_type, quantity) VALUES
   (1, 1, 'IN', 50),
   (2, 1, 'OUT', 20),
@@ -348,6 +363,7 @@ SELECT setval('receiver_profiles_receiver_id_seq', GREATEST((SELECT MAX(receiver
 SELECT setval('ngo_profiles_ngo_id_seq', GREATEST((SELECT MAX(ngo_id) FROM ngo_profiles), 1));
 SELECT setval('beneficiaries_beneficiary_id_seq', GREATEST((SELECT MAX(beneficiary_id) FROM beneficiaries), 1));
 SELECT setval('programs_program_id_seq', GREATEST((SELECT MAX(program_id) FROM programs), 1));
+SELECT setval('item_categories_category_id_seq', GREATEST((SELECT MAX(category_id) FROM item_categories), 1));
 SELECT setval('verification_requests_request_id_seq', GREATEST((SELECT MAX(request_id) FROM verification_requests), 1));
 SELECT setval('verification_documents_document_id_seq', GREATEST((SELECT MAX(document_id) FROM verification_documents), 1));
 SELECT setval('verification_status_history_history_id_seq', GREATEST((SELECT MAX(history_id) FROM verification_status_history), 1));

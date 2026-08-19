@@ -3,22 +3,34 @@
 -- user_id values are logical links to iam_db.users (no cross-DB FK)
 -- ============================================================================
 
-INSERT INTO notifications (notification_id, user_id, title, message, status) VALUES
-  (1, 2, 'Donation Received', 'Thank you for donating INR 10,000 to the Education Pool.', 'READ'),
-  (2, 2, 'Pickup Scheduled', 'Item pickup for your clothing donation is scheduled tomorrow at 10:30 AM.', 'UNREAD'),
-  (3, 3, 'Verification Pending', 'Upload a clear PAN card to complete donor verification.', 'UNREAD'),
-  (4, 4, 'Application Update', 'Your financial assistance request #1 has been approved.', 'UNREAD'),
-  (5, 4, 'Disbursement Sent', 'INR 30,000 for dialysis relief was transferred to your account.', 'READ'),
-  (6, 5, 'Documents Required', 'Please upload updated medical bills for your assistance request.', 'UNREAD'),
-  (7, 6, 'Item Allocation', '20 jackets have been allocated to your NGO request.', 'UNREAD'),
-  (8, 6, 'Fund Approved', 'Fund request for community health camp was approved.', 'READ'),
-  (9, 7, 'NGO Under Review', 'Your NGO documents are currently under review.', 'READ'),
-  (10, 1, 'System Alert', 'New NGO registration submitted for review.', 'UNREAD'),
-  (11, 8, 'Donation Receipt', 'Receipt generated for INR 15,000 contribution.', 'READ'),
-  (12, 9, 'KYC Pending', 'Complete your profile verification to unlock assistance features.', 'UNREAD'),
-  (13, 10, 'Fund Approved', 'Fund request for INR 35,000 has been approved.', 'UNREAD')
+INSERT INTO notifications (
+  notification_id, user_id, notification_type, title, message, status,
+  related_entity_type, related_entity_id, action_url
+) VALUES
+  (1, 2, 'DONATION', 'Donation received', 'Thank you for donating ₹10,000 to the Education Pool.', 'READ', 'MONEY_DONATION', 1, '/dashboard/donor-my-donations'),
+  (2, 2, 'DONATION', 'Pickup scheduled', 'Item pickup for your clothing donation is scheduled tomorrow at 10:30 AM.', 'UNREAD', 'ITEM_DONATION', 2, '/dashboard/donor-notifications'),
+  (3, 3, 'ACCOUNT', 'Verification pending', 'Upload a clear PAN card to complete donor verification.', 'UNREAD', 'VERIFICATION', 8, '/dashboard/donor-profile'),
+  (4, 4, 'APPLICATION', 'Request approved', 'Your financial assistance request #1 has been approved for ₹30,000.', 'UNREAD', 'ASSISTANCE_APPLICATION', 1, '/dashboard/receiver-requests'),
+  (5, 4, 'APPLICATION', 'Disbursement sent', '₹30,000 for dialysis relief was transferred to your account.', 'READ', 'DISBURSEMENT', 1, '/dashboard/receiver-requests'),
+  (6, 5, 'APPLICATION', 'Documents required', 'Please upload updated medical bills for your assistance request.', 'UNREAD', 'ASSISTANCE_APPLICATION', 3, '/dashboard/receiver-apply'),
+  (7, 6, 'CAMPAIGN', 'Item allocation', '20 jackets have been allocated to your NGO request.', 'UNREAD', 'NGO_ITEM_REQUEST', 1, '/dashboard/ngo-inventory'),
+  (8, 6, 'CAMPAIGN', 'Fund approved', 'Fund request for community health camp was approved.', 'READ', 'NGO_FUND_REQUEST', 1, '/dashboard/ngo-request-funds'),
+  (9, 7, 'ACCOUNT', 'NGO under review', 'Your NGO documents are currently under review.', 'READ', 'VERIFICATION', 4, '/dashboard/ngo-profile'),
+  (10, 1, 'ACCOUNT', 'System alert', 'New NGO registration submitted for review.', 'UNREAD', 'VERIFICATION', 4, NULL),
+  (11, 8, 'DONATION', 'Donation receipt', 'Receipt generated for ₹15,000 contribution.', 'READ', 'MONEY_DONATION', 10, '/dashboard/donor-my-donations'),
+  (12, 9, 'ACCOUNT', 'KYC pending', 'Complete your profile verification to unlock assistance features.', 'UNREAD', 'VERIFICATION', 5, '/dashboard/receiver-profile'),
+  (13, 10, 'CAMPAIGN', 'Fund approved', 'Fund request for ₹35,000 has been approved.', 'UNREAD', 'NGO_FUND_REQUEST', 4, '/dashboard/ngo-request-funds'),
+  (14, 4, 'APPLICATION', 'Request under review', 'Your assistance request #2 is being reviewed by AJA Abayahastham.', 'UNREAD', 'ASSISTANCE_APPLICATION', 2, '/dashboard/receiver-requests'),
+  (15, 4, 'APPLICATION', 'Request submitted', 'Your financial assistance request #4 has been received and is pending review.', 'READ', 'ASSISTANCE_APPLICATION', 4, '/dashboard/receiver-requests')
 ON CONFLICT (notification_id) DO UPDATE
-SET user_id = EXCLUDED.user_id, title = EXCLUDED.title, message = EXCLUDED.message, status = EXCLUDED.status;
+SET user_id = EXCLUDED.user_id,
+    notification_type = EXCLUDED.notification_type,
+    title = EXCLUDED.title,
+    message = EXCLUDED.message,
+    status = EXCLUDED.status,
+    related_entity_type = EXCLUDED.related_entity_type,
+    related_entity_id = EXCLUDED.related_entity_id,
+    action_url = EXCLUDED.action_url;
 
 INSERT INTO notification_templates (template_id, template_name, channel, content) VALUES
   (1, 'DONATION_CONFIRMED', 'EMAIL', 'Dear Donor, thank you! Your donation of INR {{amount}} has been confirmed.'),
